@@ -1,0 +1,125 @@
+/* =====================================================================
+   LOJA DE CANECAS - estilos (loja publica + painel administrativo)
+   ===================================================================== */
+:root {
+  --cafe: #5b3a29;
+  --cafe-escuro: #3b2418;
+  --caramelo: #d9822b;
+  --caramelo-escuro: #b96a1c;
+  --creme: #fbf6ef;
+  --creme-2: #f1e7d8;
+  --borda: #e6d9c6;
+}
+
+html { font-size: 14px; position: relative; min-height: 100%; }
+@media (min-width: 768px) { html { font-size: 16px; } }
+
+body { margin-bottom: 70px; background: var(--creme); color: #2e2a27; }
+
+/* ---------- botoes e foco ---------- */
+.btn-caramelo { background: var(--caramelo); border-color: var(--caramelo); color: #fff; font-weight: 600; }
+.btn-caramelo:hover, .btn-caramelo:focus { background: var(--caramelo-escuro); border-color: var(--caramelo-escuro); color: #fff; }
+.btn-outline-cafe { color: var(--cafe); border-color: var(--cafe); }
+.btn-outline-cafe:hover { background: var(--cafe); color: #fff; }
+.btn:focus, .btn:active:focus, .form-control:focus, .form-select:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem #fff, 0 0 0 0.25rem rgba(217, 130, 43, .55);
+}
+a { color: var(--caramelo-escuro); }
+a:hover { color: var(--cafe); }
+
+/* ---------- loja: navbar ---------- */
+.navbar-loja { background: var(--cafe-escuro); }
+.navbar-loja .navbar-brand { font-weight: 700; letter-spacing: .3px; }
+.navbar-loja .nav-link { color: #f3e6d6; }
+.navbar-loja .nav-link:hover { color: #fff; }
+.badge-carrinho { background: var(--caramelo); color: #fff; font-size: .72rem; }
+.faixa-frete { background: var(--caramelo); color: #fff; font-size: .85rem; text-align: center; padding: .35rem .5rem; }
+
+/* ---------- loja: hero ---------- */
+.hero {
+  background: linear-gradient(120deg, var(--cafe) 0%, var(--cafe-escuro) 60%, #2a170f 100%);
+  color: #fff; border-radius: 1rem; padding: 2.5rem 2rem; position: relative; overflow: hidden;
+}
+.hero h1 { font-weight: 800; }
+.hero .lead { color: #ecd9c3; }
+.hero::after {
+  content: "\2615"; position: absolute; right: 2rem; bottom: -1.5rem; font-size: 11rem; opacity: .12; line-height: 1;
+}
+
+/* ---------- loja: filtros ---------- */
+.pill { display: inline-block; padding: .35rem .9rem; border-radius: 2rem; border: 1px solid var(--borda);
+        background: #fff; color: var(--cafe); text-decoration: none; font-size: .9rem; white-space: nowrap; }
+.pill:hover { border-color: var(--caramelo); color: var(--caramelo-escuro); }
+.pill.ativa { background: var(--cafe); border-color: var(--cafe); color: #fff; }
+
+/* ---------- loja: card de produto ---------- */
+.produto-card { border: 1px solid var(--borda); border-radius: .9rem; overflow: hidden; background: #fff;
+                transition: transform .15s ease, box-shadow .15s ease; height: 100%; }
+.produto-card:hover { transform: translateY(-3px); box-shadow: 0 .6rem 1.2rem rgba(60, 36, 24, .13); }
+.produto-card .foto { display: block; background: var(--creme-2); aspect-ratio: 1 / 1; position: relative; }
+.produto-card .foto img { width: 100%; height: 100%; object-fit: cover; }
+.produto-card .categoria { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: #9a8573; }
+.produto-card .nome { color: var(--cafe-escuro); font-weight: 600; text-decoration: none; line-height: 1.25; }
+.produto-card .nome:hover { color: var(--caramelo-escuro); }
+.preco { font-size: 1.3rem; font-weight: 800; color: var(--cafe-escuro); }
+.preco-grande { font-size: 2.1rem; font-weight: 800; color: var(--cafe-escuro); }
+.tag-destaque { position: absolute; top: .6rem; left: .6rem; background: var(--caramelo); color: #fff;
+                font-size: .72rem; font-weight: 700; padding: .2rem .55rem; border-radius: 2rem; }
+.tag-esgotado { position: absolute; top: .6rem; right: .6rem; }
+.produto-card.esgotado .foto img { filter: grayscale(.9); opacity: .6; }
+
+/* ---------- seletor de quantidade (botoes - e +) ---------- */
+.qty-stepper { display: inline-flex; align-items: stretch; border: 1px solid var(--borda); border-radius: .5rem; overflow: hidden; background: #fff; }
+.qty-stepper button { border: 0; background: var(--creme-2); width: 2rem; font-weight: 700; color: var(--cafe); }
+.qty-stepper button:hover { background: var(--borda); }
+.qty-stepper input { border: 0; width: 2.8rem; text-align: center; font-weight: 600; -moz-appearance: textfield; background: #fff; }
+.qty-stepper input::-webkit-outer-spin-button, .qty-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qty-stepper input:focus { outline: none; }
+
+/* ---------- carrinho / checkout / pedidos ---------- */
+.resumo-card { border: 1px solid var(--borda); border-radius: .9rem; background: #fff; }
+.thumb { width: 64px; height: 64px; object-fit: cover; border-radius: .5rem; background: var(--creme-2); }
+.card { border-color: var(--borda); border-radius: .9rem; }
+.table > :not(caption) > * > * { background-color: transparent; }
+
+.etapas { display: flex; gap: .5rem; margin: 1rem 0; }
+.etapa { flex: 1; text-align: center; font-size: .85rem; padding-top: .6rem; border-top: 5px solid var(--borda); color: #9a8573; }
+.etapa.feita { border-top-color: #2e8f6b; color: #2e8f6b; font-weight: 600; }
+.etapa.cancelada { border-top-color: #c9372c; color: #c9372c; font-weight: 600; }
+
+footer.footer-loja { position: absolute; bottom: 0; width: 100%; min-height: 60px; line-height: 1.4; padding: 1rem 0;
+                     background: var(--cafe-escuro); color: #d8c4ac; }
+footer.footer-loja a { color: #f0c58a; }
+
+/* ---------- painel administrativo ---------- */
+body.admin { background: #f4f1ec; margin-bottom: 0; }
+.admin-wrap { display: flex; min-height: 100vh; }
+.admin-menu { width: 230px; flex-shrink: 0; background: var(--cafe-escuro); color: #e9d9c6; padding: 1rem .75rem; }
+.admin-menu .marca { color: #fff; font-weight: 700; font-size: 1.1rem; padding: .25rem .5rem 1rem; display: block; text-decoration: none; }
+.admin-menu .nav-link { color: #e0cdb6; border-radius: .5rem; padding: .55rem .75rem; }
+.admin-menu .nav-link:hover { background: rgba(255,255,255,.08); color: #fff; }
+.admin-menu .nav-link.ativo { background: var(--caramelo); color: #fff; font-weight: 600; }
+.admin-menu .secao { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: #a58f78; padding: 1rem .75rem .3rem; }
+.admin-main { flex: 1; min-width: 0; padding: 1.5rem; }
+@media (max-width: 767px) {
+  .admin-wrap { flex-direction: column; }
+  .admin-menu { width: 100%; }
+}
+
+.kpi { background: #fff; border: 1px solid var(--borda); border-radius: .9rem; padding: 1rem 1.1rem; height: 100%; }
+.kpi .rotulo { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: #8a7765; }
+.kpi .valor { font-size: 1.7rem; font-weight: 800; color: var(--cafe-escuro); line-height: 1.2; }
+.kpi .detalhe { font-size: .8rem; color: #8a7765; }
+.kpi.alerta .valor { color: #c9372c; }
+
+.grafico { width: 100%; height: auto; }
+.grafico .barra { fill: var(--caramelo); }
+.grafico .barra:hover { fill: var(--cafe); }
+.grafico text { fill: #8a7765; font-size: 11px; }
+.grafico line { stroke: #eadfce; }
+
+.barra-h { background: var(--creme-2); border-radius: .4rem; height: .7rem; overflow: hidden; }
+.barra-h > span { display: block; height: 100%; background: var(--caramelo); border-radius: .4rem; }
+.thumb-sm { width: 40px; height: 40px; object-fit: cover; border-radius: .4rem; background: var(--creme-2); }
+.table-admin th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: #8a7765; white-space: nowrap; }
+.foto-preview { width: 160px; height: 160px; object-fit: cover; border-radius: .6rem; border: 1px solid var(--borda); background: var(--creme-2); }

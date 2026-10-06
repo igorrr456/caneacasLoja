@@ -1,0 +1,51 @@
+@model List<Pedido>
+@{
+    ViewData["Title"] = "Minhas compras";
+}
+
+<h1 class="h3 mb-4">Minhas compras</h1>
+
+@if (Model.Count == 0)
+{
+    <div class="text-center py-5">
+        <div style="font-size:3.5rem">&#128717;</div>
+        <p class="lead">Você ainda não fez nenhuma compra.</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-caramelo">Conhecer as canecas</a>
+    </div>
+}
+else
+{
+    <div class="resumo-card p-3">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Data</th>
+                        <th class="text-center">Itens</th>
+                        <th>Pagamento</th>
+                        <th>Situação</th>
+                        <th class="text-end">Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pedido in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">#@pedido.Id</td>
+                            <td>@pedido.DataPedido.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-center">@pedido.QtdItens</td>
+                            <td>@pedido.FormaPagamento</td>
+                            <td><span class="badge bg-@RegrasLoja.CorSituacao(pedido.Situacao)">@pedido.Situacao</span></td>
+                            <td class="text-end">@pedido.ValorTotal.ToString("C")</td>
+                            <td class="text-end">
+                                <a asp-action="Detalhes" asp-route-id="@pedido.Id" class="btn btn-sm btn-outline-cafe">Detalhes</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

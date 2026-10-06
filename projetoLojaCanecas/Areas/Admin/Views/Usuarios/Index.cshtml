@@ -1,0 +1,55 @@
+@model List<Usuario>
+@{
+    ViewData["Title"] = "Usuários do painel";
+    int status = ViewBag.Status;
+}
+
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <h1 class="h3 mb-0">Usuários do painel @(status == 0 ? "(excluídos)" : "")</h1>
+    <div class="ms-auto d-flex gap-2">
+        @if (status == 1)
+        {
+            <a asp-action="Cadastrar" class="btn btn-caramelo">Cadastrar usuário</a>
+            <a asp-action="Index" asp-route-status="0" class="btn btn-outline-secondary">Ver excluídos</a>
+        }
+        else
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">Voltar para ativos</a>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-admin">
+            <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Cadastro</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@u.Nome</td>
+                        <td>@u.Login</td>
+                        <td><span class="badge bg-secondary">@u.Perfil</span></td>
+                        <td>@u.DataCadastro.ToString("dd/MM/yyyy")</td>
+                        <td class="text-end text-nowrap">
+                            @if (status == 1)
+                            {
+                                <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-warning">Editar</a>
+                                <form asp-action="Delete" asp-route-id="@u.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Deseja realmente excluir este usuário?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="Reativar" asp-route-id="@u.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success">Reativar</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

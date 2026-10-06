@@ -1,0 +1,72 @@
+@model List<Pedido>
+@{
+    ViewData["Title"] = "Pedidos";
+    int status = ViewBag.Status;
+    string situacao = ViewBag.Situacao;
+}
+
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <h1 class="h3 mb-0">Pedidos @(status == 0 ? "(excluídos)" : "")</h1>
+    <div class="ms-auto d-flex flex-wrap gap-2">
+        @if (status == 1)
+        {
+            <a asp-action="Index" asp-route-status="0" class="btn btn-outline-secondary">Ver excluídos</a>
+        }
+        else
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">Voltar para ativos</a>
+        }
+        <form asp-action="Index" method="get" class="d-flex gap-2">
+            <input type="hidden" name="status" value="@status" />
+            <select name="situacao" class="form-select" onchange="this.form.submit()" aria-label="Situação">
+                <option value="" selected="@(situacao == "")">Todas as situações</option>
+                @foreach (var s in RegrasLoja.Situacoes)
+                {
+                    <option value="@s" selected="@(situacao == s)">@s</option>
+                }
+            </select>
+            <input type="text" name="busca" value="@ViewBag.Busca" class="form-control" placeholder="Nº, cliente ou e-mail" />
+            <button type="submit" class="btn btn-outline-primary">Buscar</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-admin">
+            <thead>
+                <tr>
+                    <th>Pedido</th><th>Data</th><th>Cliente</th><th class="text-center">Itens</th>
+                    <th>Pagamento</th><th>Situação</th><th class="text-end">Total</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">#@p.Id</td>
+                        <td>@p.DataPedido.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@p.ClienteNome<div class="small text-muted">@p.ClienteEmail</div></td>
+                        <td class="text-center">@p.QtdItens</td>
+                        <td>@p.FormaPagamento</td>
+                        <td><span class="badge bg-@RegrasLoja.CorSituacao(p.Situacao)">@p.Situacao</span></td>
+                        <td class="text-end text-nowrap">@p.ValorTotal.ToString("C")</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Detalhes" asp-route-id="@p.Id" class="btn btn-sm btn-outline-cafe">Detalhes</a>
+                            @if (status == 0)
+                            {
+                                <form asp-action="Reativar" asp-route-id="@p.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success">Reativar</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">Nenhum pedido encontrado.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

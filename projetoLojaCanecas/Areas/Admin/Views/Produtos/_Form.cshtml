@@ -1,0 +1,68 @@
+@model Produto
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <label asp-for="Nome" class="form-label"></label>
+                <input asp-for="Nome" class="form-control" />
+                <span asp-validation-for="Nome" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="CategoriaId" class="form-label"></label>
+                <select asp-for="CategoriaId" asp-items="ViewBag.Categorias" class="form-select">
+                    <option value="0">-- selecione --</option>
+                </select>
+                <span asp-validation-for="CategoriaId" class="text-danger"></span>
+            </div>
+            <div class="col-12 mb-3">
+                <label asp-for="Descricao" class="form-label"></label>
+                <textarea asp-for="Descricao" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Descricao" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="CapacidadeMl" class="form-label"></label>
+                <input asp-for="CapacidadeMl" class="form-control" />
+                <span asp-validation-for="CapacidadeMl" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Material" class="form-label"></label>
+                <input asp-for="Material" class="form-control" />
+                <span asp-validation-for="Material" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Cor" class="form-label"></label>
+                <input asp-for="Cor" class="form-control" />
+                <span asp-validation-for="Cor" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Preco" class="form-label"></label>
+                <input asp-for="Preco" type="text" inputmode="decimal" class="form-control" placeholder="49,90" />
+                <span asp-validation-for="Preco" class="text-danger"></span>
+                <div class="form-text">Use vírgula nos centavos (ex.: 49,90).</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Estoque" class="form-label"></label>
+                <input asp-for="Estoque" class="form-control" />
+                <span asp-validation-for="Estoque" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 mb-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input asp-for="Destaque" class="form-check-input" />
+                    <label asp-for="Destaque" class="form-check-label"></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <label asp-for="ImagemArquivo" class="form-label"></label>
+        <div class="mb-2">
+            <img id="previewFoto" src="@Model.ImagemUrl" alt="Foto da caneca" class="foto-preview" />
+        </div>
+        <input asp-for="ImagemArquivo" type="file" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" data-preview="#previewFoto" />
+        <span asp-validation-for="ImagemArquivo" class="text-danger"></span>
+        <div class="form-text">JPG, PNG, WEBP ou GIF, até 2 MB. Se não enviar uma foto nova, a atual é mantida.</div>
+    </div>
+</div>

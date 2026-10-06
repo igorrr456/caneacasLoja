@@ -1,0 +1,43 @@
+@model Produto
+@* Card da vitrine: foto, nome, preco, botao de quantidade e botao Comprar *@
+<div class="produto-card @(Model.Disponivel ? "" : "esgotado") d-flex flex-column">
+    <a asp-controller="Produtos" asp-action="Detalhes" asp-route-id="@Model.Id" class="foto">
+        <img src="@Model.ImagemUrl" alt="@Model.Nome" loading="lazy" />
+        @if (Model.Destaque && Model.Disponivel)
+        {
+            <span class="tag-destaque">Destaque</span>
+        }
+        @if (!Model.Disponivel)
+        {
+            <span class="badge bg-dark tag-esgotado">Esgotada</span>
+        }
+    </a>
+    <div class="p-3 d-flex flex-column flex-grow-1">
+        <div class="categoria">@Model.CategoriaNome</div>
+        <a asp-controller="Produtos" asp-action="Detalhes" asp-route-id="@Model.Id" class="nome mb-1">@Model.Nome</a>
+        <div class="small text-muted mb-2">@Model.CapacidadeMl ml @(string.IsNullOrEmpty(Model.Cor) ? "" : "· " + Model.Cor)</div>
+        <div class="preco mb-2">@Model.Preco.ToString("C")</div>
+        <div class="small text-muted mb-2">ou 3x de @((Model.Preco / 3).ToString("C")) sem juros</div>
+
+        <div class="mt-auto">
+            @if (Model.Disponivel)
+            {
+                <form asp-controller="Carrinho" asp-action="Adicionar" method="post" class="d-flex gap-2">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="comprarAgora" value="true" />
+                    <div class="qty-stepper">
+                        <button type="button" data-qty-step="-1" aria-label="Diminuir">&minus;</button>
+                        <input type="number" name="qtd" value="1" min="1" max="@Math.Min(Model.Estoque, 99)" aria-label="Quantidade" />
+                        <button type="button" data-qty-step="1" aria-label="Aumentar">+</button>
+                    </div>
+                    <button type="submit" class="btn btn-caramelo flex-grow-1">Comprar</button>
+                </form>
+                <a asp-controller="Produtos" asp-action="Detalhes" asp-route-id="@Model.Id" class="small d-block mt-2 text-center">Ver detalhes</a>
+            }
+            else
+            {
+                <a asp-controller="Produtos" asp-action="Detalhes" asp-route-id="@Model.Id" class="btn btn-outline-secondary w-100">Ver detalhes</a>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,852 @@
+SET NAMES utf8mb4;
+
+DROP DATABASE IF EXISTS loja_canecas_db;
+CREATE DATABASE loja_canecas_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE loja_canecas_db;
+
+-- ---------------------------------------------------------------------
+--  TABELAS
+-- ---------------------------------------------------------------------
+
+-- Usuarios do PAINEL ADMINISTRATIVO (equipe da loja)
+CREATE TABLE usuarios (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    nome           VARCHAR(100) NOT NULL,
+    login          VARCHAR(50)  NOT NULL UNIQUE,
+    senha_hash     CHAR(64)     NOT NULL,          -- SHA-256 em hexadecimal
+    perfil         VARCHAR(20)  NOT NULL,          -- Administrador | Gerente
+    data_cadastro  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status         TINYINT(1)   NOT NULL DEFAULT 1,
+    CONSTRAINT ck_usuarios_perfil CHECK (perfil IN ('Administrador','Gerente'))
+);
+
+-- Clientes da loja (quem compra; qualquer pessoa pode se cadastrar)
+CREATE TABLE clientes (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    nome           VARCHAR(100) NOT NULL,
+    cpf            VARCHAR(14)  NOT NULL UNIQUE,
+    email          VARCHAR(100) NOT NULL UNIQUE,   -- usado como login
+    senha_hash     CHAR(64)     NOT NULL,
+    telefone       VARCHAR(20)  NULL,
+    cep            VARCHAR(9)   NOT NULL,
+    endereco       VARCHAR(150) NOT NULL,
+    numero         VARCHAR(10)  NOT NULL,
+    complemento    VARCHAR(60)  NULL,
+    bairro         VARCHAR(60)  NOT NULL,
+    cidade         VARCHAR(60)  NOT NULL,
+    uf             CHAR(2)      NOT NULL,
+    data_cadastro  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status         TINYINT(1)   NOT NULL DEFAULT 1
+);
+
+CREATE TABLE categorias (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    nome           VARCHAR(60)  NOT NULL UNIQUE,
+    descricao      VARCHAR(200) NULL,
+    data_cadastro  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status         TINYINT(1)   NOT NULL DEFAULT 1
+);
+
+-- Produtos (as canecas)
+CREATE TABLE produtos (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    categoria_id   INT           NOT NULL,
+    nome           VARCHAR(100)  NOT NULL,
+    descricao      VARCHAR(500)  NULL,
+    capacidade_ml  INT           NOT NULL,
+    material       VARCHAR(50)   NULL,
+    cor            VARCHAR(30)   NULL,
+    preco          DECIMAL(10,2) NOT NULL,
+    estoque        INT           NOT NULL DEFAULT 0,
+    imagem         VARCHAR(200)  NULL,             -- nome do arquivo em wwwroot/img/produtos
+    destaque       TINYINT(1)    NOT NULL DEFAULT 0,
+    data_cadastro  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status         TINYINT(1)    NOT NULL DEFAULT 1,
+    CONSTRAINT fk_produto_categoria FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+    CONSTRAINT ck_produto_preco   CHECK (preco > 0),
+    CONSTRAINT ck_produto_estoque CHECK (estoque >= 0)
+);
+
+-- Pedidos (CABECALHO)
+--   situacao = andamento do pedido (Pendente > Pago > Enviado > Entregue | Cancelado)
+--   status   = exclusao logica (1 ativo / 0 excluido)
+CREATE TABLE pedidos (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id        INT           NOT NULL,
+    data_pedido       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    situacao          VARCHAR(20)   NOT NULL DEFAULT 'Pendente',
+    forma_pagamento   VARCHAR(30)   NOT NULL,
+    endereco_entrega  VARCHAR(300)  NOT NULL,       -- copia do endereco no momento da compra
+    valor_produtos    DECIMAL(10,2) NOT NULL DEFAULT 0,
+    valor_frete       DECIMAL(10,2) NOT NULL DEFAULT 0,
+    valor_total       DECIMAL(10,2) NOT NULL DEFAULT 0,
+    status            TINYINT(1)    NOT NULL DEFAULT 1,
+    CONSTRAINT fk_pedido_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    CONSTRAINT ck_pedido_situacao CHECK (situacao IN ('Pendente','Pago','Enviado','Entregue','Cancelado'))
+);
+
+-- Itens do pedido (guarda o preco da epoca da compra)
+CREATE TABLE pedido_itens (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    pedido_id       INT           NOT NULL,
+    produto_id      INT           NOT NULL,
+    quantidade      INT           NOT NULL,
+    preco_unitario  DECIMAL(10,2) NOT NULL,
+    CONSTRAINT fk_item_pedido  FOREIGN KEY (pedido_id)  REFERENCES pedidos(id),
+    CONSTRAINT fk_item_produto FOREIGN KEY (produto_id) REFERENCES produtos(id),
+    CONSTRAINT ck_item_qtd CHECK (quantidade > 0),
+    CONSTRAINT uq_item_produto UNIQUE (pedido_id, produto_id)
+);
+
+-- ---------------------------------------------------------------------
+--  DADOS INICIAIS
+--  Painel admin : login 'admin'   senha 'admin123'   (troque depois do primeiro acesso)
+--  Clientes     : e-mail 'cliente@teste.com' senha 'cliente123' (e outros 3 de exemplo)
+-- ---------------------------------------------------------------------
+INSERT INTO usuarios (nome, login, senha_hash, perfil) VALUES
+('Administrador da Loja','admin',SHA2('admin123',256),'Administrador'),
+('Gerente de Vendas','gerente',SHA2('gerente123',256),'Gerente');
+
+INSERT INTO categorias (nome, descricao) VALUES
+('Clássicas','Canecas lisas e atemporais para o café de todo dia.'),
+('Divertidas','Estampas bem-humoradas para presentear (ou se presentear).'),
+('Térmicas e Viagem','Mantêm a bebida na temperatura certa, onde você estiver.'),
+('Presentes','Kits e edições especiais prontos para dar de presente.');
+
+INSERT INTO clientes (nome,cpf,email,senha_hash,telefone,cep,endereco,numero,complemento,bairro,cidade,uf,data_cadastro) VALUES
+('Cliente de Teste','529.982.247-25','cliente@teste.com',SHA2('cliente123',256),'(11) 91234-5678','01310-100','Avenida Paulista','1000','Apto 52','Bela Vista','São Paulo','SP',DATE_SUB(NOW(), INTERVAL 40 DAY)),
+('Maria Oliveira','111.444.777-35','maria@email.com',SHA2('cliente123',256),'(11) 91111-1111','09010-100','Rua das Flores','100',NULL,'Centro','Santo André','SP',DATE_SUB(NOW(), INTERVAL 32 DAY)),
+('João Santos','390.533.447-05','joao@email.com',SHA2('cliente123',256),'(21) 92222-2222','20040-020','Rua da Quitanda','200','Sala 3','Centro','Rio de Janeiro','RJ',DATE_SUB(NOW(), INTERVAL 24 DAY)),
+('Ana Pereira','935.411.347-80','ana@email.com',SHA2('cliente123',256),'(31) 93333-3333','30130-010','Avenida Afonso Pena','350',NULL,'Centro','Belo Horizonte','MG',DATE_SUB(NOW(), INTERVAL 16 DAY));
+
+INSERT INTO produtos (categoria_id,nome,descricao,capacidade_ml,material,cor,preco,estoque,imagem,destaque,data_cadastro) VALUES
+(1,'Caneca Clássica Branca','Caneca de porcelana branca, acabamento brilhante, perfeita para café, chá ou chocolate quente. Alça confortável e borda arredondada. Pode ir ao micro-ondas e à lava-louças.',325,'Porcelana','Branca',24.9,60,'mug-01.svg',1,DATE_SUB(NOW(), INTERVAL 60 DAY)),
+(1,'Caneca Preta Fosca','Acabamento fosco aveludado com interior brilhante. Visual sofisticado para quem leva o café a sério. Resistente a riscos e lavável na máquina.',325,'Cerâmica','Preta',29.9,50,'mug-02.svg',0,DATE_SUB(NOW(), INTERVAL 57 DAY)),
+(1,'Caneca Azul Oceano','Esmalte azul profundo com brilho intenso. Capacidade ideal para o cappuccino da manhã.',300,'Cerâmica','Azul',32.9,39,'mug-03.svg',0,DATE_SUB(NOW(), INTERVAL 54 DAY)),
+(1,'Caneca Vermelha Vintage','Inspirada nas canecas de cozinha de antigamente, com listras brancas e acabamento esmaltado.',350,'Cerâmica esmaltada','Vermelha',39.9,30,'mug-04.svg',1,DATE_SUB(NOW(), INTERVAL 51 DAY)),
+(2,'Caneca Café & Código','Para quem transforma café em software. Estampa exclusiva em alto contraste que não desbota na lava-louças.',325,'Cerâmica','Verde',34.9,57,'mug-05.svg',0,DATE_SUB(NOW(), INTERVAL 48 DAY)),
+(2,'Caneca Segunda de Novo?','A caneca oficial das manhãs de segunda-feira. Amarelo vibrante para ajudar a acordar.',325,'Cerâmica','Amarela',31.9,41,'mug-06.svg',0,DATE_SUB(NOW(), INTERVAL 45 DAY)),
+(2,'Caneca Gatinho Sonolento','Fofura em forma de caneca: um gatinho que também precisa de café para acordar.',300,'Cerâmica','Rosa',36.9,38,'mug-07.svg',1,DATE_SUB(NOW(), INTERVAL 42 DAY)),
+(2,'Caneca Mágica Preta','Ao receber líquido quente, a estampa se revela! Efeito térmico que impressiona em qualquer mesa.',325,'Cerâmica termossensível','Preta',49.9,27,'mug-08.svg',0,DATE_SUB(NOW(), INTERVAL 39 DAY)),
+(3,'Caneca Térmica Inox 450ml','Parede dupla em aço inox: mantém quente por até 6 horas e gelado por até 12. Tampa com trava antivazamento.',450,'Aço inoxidável','Prata',79.9,25,'mug-09.svg',0,DATE_SUB(NOW(), INTERVAL 36 DAY)),
+(3,'Caneca de Viagem com Tampa','Perfeita para o carro e para o escritório. Encaixa no porta-copos e tem tampa com abertura para beber.',400,'Aço inoxidável','Azul',69.9,32,'mug-10.svg',1,DATE_SUB(NOW(), INTERVAL 33 DAY)),
+(3,'Caneca Térmica Preta 350ml','Compacta e discreta, com revestimento emborrachado antiderrapante.',350,'Aço inoxidável','Preta',64.9,7,'mug-11.svg',0,DATE_SUB(NOW(), INTERVAL 30 DAY)),
+(4,'Kit 2 Canecas Casal','Duas canecas combinando, em caixa para presente. Um coração para cada manhã a dois.',650,'Porcelana','Vermelha e Branca',59.9,36,'mug-12.svg',1,DATE_SUB(NOW(), INTERVAL 27 DAY)),
+(4,'Caneca Gigante 600ml','Para quem não aceita café pela metade. Capacidade extra e alça reforçada.',600,'Cerâmica','Azul',44.9,5,'mug-13.svg',0,DATE_SUB(NOW(), INTERVAL 24 DAY));
+
+INSERT INTO pedidos (cliente_id,data_pedido,situacao,forma_pagamento,endereco_entrega,valor_produtos,valor_frete,valor_total) VALUES
+(1,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 29 DAY), INTERVAL '20:51' HOUR_MINUTE),'Entregue','Pix','Avenida Paulista, 1000 - Apto 52 - Bela Vista - São Paulo/SP - CEP 01310-100',200.5,0,200.5),
+(4,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 28 DAY), INTERVAL '9:05' HOUR_MINUTE),'Entregue','Cartão de crédito','Avenida Afonso Pena, 350 - Centro - Belo Horizonte/MG - CEP 30130-010',39.9,15.9,55.8),
+(1,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 27 DAY), INTERVAL '16:07' HOUR_MINUTE),'Entregue','Cartão de crédito','Avenida Paulista, 1000 - Apto 52 - Bela Vista - São Paulo/SP - CEP 01310-100',139.7,15.9,155.6),
+(1,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 25 DAY), INTERVAL '20:18' HOUR_MINUTE),'Entregue','Pix','Avenida Paulista, 1000 - Apto 52 - Bela Vista - São Paulo/SP - CEP 01310-100',141.7,15.9,157.6),
+(2,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 24 DAY), INTERVAL '13:22' HOUR_MINUTE),'Entregue','Pix','Rua das Flores, 100 - Centro - Santo André/SP - CEP 09010-100',84.8,15.9,100.7),
+(3,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 23 DAY), INTERVAL '16:46' HOUR_MINUTE),'Entregue','Pix','Rua da Quitanda, 200 - Sala 3 - Centro - Rio de Janeiro/RJ - CEP 20040-020',69.9,15.9,85.8),
+(2,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 21 DAY), INTERVAL '18:20' HOUR_MINUTE),'Entregue','Pix','Rua das Flores, 100 - Centro - Santo André/SP - CEP 09010-100',254.6,0,254.6),
+(2,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 20 DAY), INTERVAL '17:56' HOUR_MINUTE),'Entregue','Boleto','Rua das Flores, 100 - Centro - Santo André/SP - CEP 09010-100',71.8,15.9,87.7),
+(3,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 18 DAY), INTERVAL '12:08' HOUR_MINUTE),'Entregue','Pix','Rua da Quitanda, 200 - Sala 3 - Centro - Rio de Janeiro/RJ - CEP 20040-020',138.7,15.9,154.6),
+(3,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 17 DAY), INTERVAL '10:32' HOUR_MINUTE),'Entregue','Cartão de crédito','Rua da Quitanda, 200 - Sala 3 - Centro - Rio de Janeiro/RJ - CEP 20040-020',106.8,15.9,122.7),
+(1,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 16 DAY), INTERVAL '20:43' HOUR_MINUTE),'Entregue','Cartão de crédito','Avenida Paulista, 1000 - Apto 52 - Bela Vista - São Paulo/SP - CEP 01310-100',32.9,15.9,48.8),
+(1,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 13 DAY), INTERVAL '18:56' HOUR_MINUTE),'Entregue','Boleto','Avenida Paulista, 1000 - Apto 52 - Bela Vista - São Paulo/SP - CEP 01310-100',264.5,0,264.5),
+(3,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 9 DAY), INTERVAL '15:00' HOUR_MINUTE),'Enviado','Boleto','Rua da Quitanda, 200 - Sala 3 - Centro - Rio de Janeiro/RJ - CEP 20040-020',94.7,15.9,110.6),
+(3,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 8 DAY), INTERVAL '21:40' HOUR_MINUTE),'Cancelado','Cartão de crédito','Rua da Quitanda, 200 - Sala 3 - Centro - Rio de Janeiro/RJ - CEP 20040-020',79.9,15.9,95.8),
+(2,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 7 DAY), INTERVAL '8:38' HOUR_MINUTE),'Entregue','Cartão de crédito','Rua das Flores, 100 - Centro - Santo André/SP - CEP 09010-100',239.7,0,239.7),
+(4,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 4 DAY), INTERVAL '11:56' HOUR_MINUTE),'Pago','Boleto','Avenida Afonso Pena, 350 - Centro - Belo Horizonte/MG - CEP 30130-010',79.8,15.9,95.7),
+(1,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 3 DAY), INTERVAL '18:30' HOUR_MINUTE),'Pago','Boleto','Avenida Paulista, 1000 - Apto 52 - Bela Vista - São Paulo/SP - CEP 01310-100',109.8,15.9,125.7),
+(2,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 2 DAY), INTERVAL '18:41' HOUR_MINUTE),'Pago','Cartão de crédito','Rua das Flores, 100 - Centro - Santo André/SP - CEP 09010-100',236.6,0,236.6),
+(4,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL '13:01' HOUR_MINUTE),'Pendente','Boleto','Avenida Afonso Pena, 350 - Centro - Belo Horizonte/MG - CEP 30130-010',69.8,15.9,85.7),
+(2,DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 0 DAY), INTERVAL '11:04' HOUR_MINUTE),'Enviado','Pix','Rua das Flores, 100 - Centro - Santo André/SP - CEP 09010-100',29.9,15.9,45.8);
+
+INSERT INTO pedido_itens (pedido_id,produto_id,quantidade,preco_unitario) VALUES
+(1,7,3,36.9),
+(1,4,1,39.9),
+(1,8,1,49.9),
+(2,4,1,39.9),
+(3,10,1,69.9),
+(3,5,2,34.9),
+(4,6,1,31.9),
+(4,10,1,69.9),
+(4,4,1,39.9),
+(5,5,1,34.9),
+(5,8,1,49.9),
+(6,10,1,69.9),
+(7,11,3,64.9),
+(7,12,1,59.9),
+(8,7,1,36.9),
+(8,5,1,34.9),
+(9,7,2,36.9),
+(9,11,1,64.9),
+(10,10,1,69.9),
+(10,7,1,36.9),
+(11,3,1,32.9),
+(12,8,3,49.9),
+(12,9,1,79.9),
+(12,5,1,34.9),
+(13,2,2,29.9),
+(13,5,1,34.9),
+(14,9,1,79.9),
+(15,9,3,79.9),
+(16,13,1,44.9),
+(16,5,1,34.9),
+(17,2,1,29.9),
+(17,9,1,79.9),
+(18,7,1,36.9),
+(18,4,1,39.9),
+(18,9,2,79.9),
+(19,2,1,29.9),
+(19,4,1,39.9),
+(20,2,1,29.9);
+
+
+-- ---------------------------------------------------------------------
+--  STORED PROCEDURES
+-- ---------------------------------------------------------------------
+DELIMITER $$
+
+-- =====================================================================
+--  USUARIOS (painel administrativo)
+-- =====================================================================
+CREATE PROCEDURE sp_usuario_login(IN p_login VARCHAR(50), IN p_senha CHAR(64))
+BEGIN
+    SELECT id, nome, login, perfil
+      FROM usuarios
+     WHERE login = p_login AND senha_hash = p_senha AND status = 1;
+END$$
+
+CREATE PROCEDURE sp_usuario_listar(IN p_status TINYINT)
+BEGIN
+    SELECT id, nome, login, perfil, data_cadastro, status
+      FROM usuarios
+     WHERE status = p_status
+     ORDER BY nome;
+END$$
+
+CREATE PROCEDURE sp_usuario_obter(IN p_id INT)
+BEGIN
+    SELECT id, nome, login, perfil, data_cadastro, status
+      FROM usuarios
+     WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_usuario_criar(IN p_nome VARCHAR(100), IN p_login VARCHAR(50),
+                                  IN p_senha CHAR(64), IN p_perfil VARCHAR(20))
+BEGIN
+    IF EXISTS (SELECT 1 FROM usuarios WHERE login = p_login) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe um usuário com este login.';
+    END IF;
+
+    INSERT INTO usuarios (nome, login, senha_hash, perfil)
+    VALUES (p_nome, p_login, p_senha, p_perfil);
+END$$
+
+-- p_senha NULL ou vazio = mantém a senha atual
+CREATE PROCEDURE sp_usuario_editar(IN p_id INT, IN p_nome VARCHAR(100), IN p_login VARCHAR(50),
+                                   IN p_perfil VARCHAR(20), IN p_senha CHAR(64))
+BEGIN
+    IF EXISTS (SELECT 1 FROM usuarios WHERE login = p_login AND id <> p_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe um usuário com este login.';
+    END IF;
+
+    -- nao deixa o sistema ficar sem nenhum Administrador ativo
+    IF p_perfil <> 'Administrador'
+       AND EXISTS (SELECT 1 FROM usuarios WHERE id = p_id AND perfil = 'Administrador' AND status = 1)
+       AND (SELECT COUNT(*) FROM usuarios WHERE perfil = 'Administrador' AND status = 1) <= 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'O sistema precisa de pelo menos um Administrador ativo.';
+    END IF;
+
+    UPDATE usuarios
+       SET nome = p_nome,
+           login = p_login,
+           perfil = p_perfil,
+           senha_hash = IF(p_senha IS NULL OR p_senha = '', senha_hash, p_senha)
+     WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_usuario_excluir(IN p_id INT)
+BEGIN
+    IF EXISTS (SELECT 1 FROM usuarios WHERE id = p_id AND perfil = 'Administrador' AND status = 1)
+       AND (SELECT COUNT(*) FROM usuarios WHERE perfil = 'Administrador' AND status = 1) <= 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'O sistema precisa de pelo menos um Administrador ativo.';
+    END IF;
+
+    UPDATE usuarios SET status = 0 WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_usuario_reativar(IN p_id INT)
+BEGIN
+    UPDATE usuarios SET status = 1 WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_usuario_alterar_senha(IN p_id INT, IN p_senha_atual CHAR(64), IN p_senha_nova CHAR(64))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM usuarios WHERE id = p_id AND senha_hash = p_senha_atual) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Senha atual incorreta.';
+    END IF;
+
+    UPDATE usuarios SET senha_hash = p_senha_nova WHERE id = p_id;
+END$$
+
+-- =====================================================================
+--  CLIENTES
+-- =====================================================================
+CREATE PROCEDURE sp_cliente_login(IN p_email VARCHAR(100), IN p_senha CHAR(64))
+BEGIN
+    SELECT id, nome, email
+      FROM clientes
+     WHERE email = p_email AND senha_hash = p_senha AND status = 1;
+END$$
+
+CREATE PROCEDURE sp_cliente_criar(IN p_nome VARCHAR(100), IN p_cpf VARCHAR(14), IN p_email VARCHAR(100),
+                                  IN p_senha CHAR(64), IN p_telefone VARCHAR(20), IN p_cep VARCHAR(9),
+                                  IN p_endereco VARCHAR(150), IN p_numero VARCHAR(10),
+                                  IN p_complemento VARCHAR(60), IN p_bairro VARCHAR(60),
+                                  IN p_cidade VARCHAR(60), IN p_uf CHAR(2))
+BEGIN
+    IF EXISTS (SELECT 1 FROM clientes WHERE email = p_email) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe um cadastro com este e-mail.';
+    END IF;
+    IF EXISTS (SELECT 1 FROM clientes WHERE cpf = p_cpf) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe um cadastro com este CPF.';
+    END IF;
+
+    INSERT INTO clientes (nome, cpf, email, senha_hash, telefone, cep, endereco, numero,
+                          complemento, bairro, cidade, uf)
+    VALUES (p_nome, p_cpf, p_email, p_senha, p_telefone, p_cep, p_endereco, p_numero,
+            p_complemento, p_bairro, p_cidade, p_uf);
+
+    SELECT LAST_INSERT_ID() AS id;
+END$$
+
+CREATE PROCEDURE sp_cliente_obter(IN p_id INT)
+BEGIN
+    SELECT id, nome, cpf, email, telefone, cep, endereco, numero, complemento,
+           bairro, cidade, uf, data_cadastro, status
+      FROM clientes
+     WHERE id = p_id;
+END$$
+
+-- Edicao feita pelo proprio cliente (senha nao muda aqui)
+CREATE PROCEDURE sp_cliente_editar(IN p_id INT, IN p_nome VARCHAR(100), IN p_cpf VARCHAR(14),
+                                   IN p_email VARCHAR(100), IN p_telefone VARCHAR(20),
+                                   IN p_cep VARCHAR(9), IN p_endereco VARCHAR(150),
+                                   IN p_numero VARCHAR(10), IN p_complemento VARCHAR(60),
+                                   IN p_bairro VARCHAR(60), IN p_cidade VARCHAR(60), IN p_uf CHAR(2))
+BEGIN
+    IF EXISTS (SELECT 1 FROM clientes WHERE email = p_email AND id <> p_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe um cadastro com este e-mail.';
+    END IF;
+    IF EXISTS (SELECT 1 FROM clientes WHERE cpf = p_cpf AND id <> p_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe um cadastro com este CPF.';
+    END IF;
+
+    UPDATE clientes
+       SET nome = p_nome, cpf = p_cpf, email = p_email, telefone = p_telefone, cep = p_cep,
+           endereco = p_endereco, numero = p_numero, complemento = p_complemento,
+           bairro = p_bairro, cidade = p_cidade, uf = p_uf
+     WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_cliente_alterar_senha(IN p_id INT, IN p_senha_atual CHAR(64), IN p_senha_nova CHAR(64))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM clientes WHERE id = p_id AND senha_hash = p_senha_atual) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Senha atual incorreta.';
+    END IF;
+
+    UPDATE clientes SET senha_hash = p_senha_nova WHERE id = p_id;
+END$$
+
+-- Listagem do painel: traz tambem quantidade de pedidos e total comprado
+CREATE PROCEDURE sp_cliente_listar(IN p_busca VARCHAR(100), IN p_status TINYINT)
+BEGIN
+    SELECT c.id, c.nome, c.cpf, c.email, c.telefone, c.cidade, c.uf, c.data_cadastro, c.status,
+           (SELECT COUNT(*) FROM pedidos p
+             WHERE p.cliente_id = c.id AND p.status = 1 AND p.situacao <> 'Cancelado') AS total_pedidos,
+           (SELECT IFNULL(SUM(p.valor_total), 0) FROM pedidos p
+             WHERE p.cliente_id = c.id AND p.status = 1 AND p.situacao <> 'Cancelado') AS total_comprado
+      FROM clientes c
+     WHERE c.status = p_status
+       AND (p_busca = '' OR c.nome LIKE CONCAT('%', p_busca, '%')
+                         OR c.email LIKE CONCAT('%', p_busca, '%')
+                         OR c.cpf LIKE CONCAT('%', p_busca, '%'))
+     ORDER BY c.nome;
+END$$
+
+CREATE PROCEDURE sp_cliente_excluir(IN p_id INT)
+BEGIN
+    UPDATE clientes SET status = 0 WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_cliente_reativar(IN p_id INT)
+BEGIN
+    UPDATE clientes SET status = 1 WHERE id = p_id;
+END$$
+
+-- =====================================================================
+--  CATEGORIAS
+-- =====================================================================
+CREATE PROCEDURE sp_categoria_listar(IN p_busca VARCHAR(60), IN p_status TINYINT)
+BEGIN
+    SELECT c.id, c.nome, c.descricao, c.data_cadastro, c.status,
+           (SELECT COUNT(*) FROM produtos p WHERE p.categoria_id = c.id AND p.status = 1) AS total_produtos
+      FROM categorias c
+     WHERE c.status = p_status
+       AND (p_busca = '' OR c.nome LIKE CONCAT('%', p_busca, '%'))
+     ORDER BY c.nome;
+END$$
+
+CREATE PROCEDURE sp_categoria_obter(IN p_id INT)
+BEGIN
+    SELECT id, nome, descricao, data_cadastro, status, 0 AS total_produtos
+      FROM categorias
+     WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_categoria_criar(IN p_nome VARCHAR(60), IN p_descricao VARCHAR(200))
+BEGIN
+    IF EXISTS (SELECT 1 FROM categorias WHERE nome = p_nome) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe uma categoria com este nome.';
+    END IF;
+
+    INSERT INTO categorias (nome, descricao) VALUES (p_nome, p_descricao);
+END$$
+
+CREATE PROCEDURE sp_categoria_editar(IN p_id INT, IN p_nome VARCHAR(60), IN p_descricao VARCHAR(200))
+BEGIN
+    IF EXISTS (SELECT 1 FROM categorias WHERE nome = p_nome AND id <> p_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Já existe uma categoria com este nome.';
+    END IF;
+
+    UPDATE categorias SET nome = p_nome, descricao = p_descricao WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_categoria_excluir(IN p_id INT)
+BEGIN
+    IF EXISTS (SELECT 1 FROM produtos WHERE categoria_id = p_id AND status = 1) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Existem produtos ativos nesta categoria. Exclua ou mude os produtos antes.';
+    END IF;
+
+    UPDATE categorias SET status = 0 WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_categoria_reativar(IN p_id INT)
+BEGIN
+    UPDATE categorias SET status = 1 WHERE id = p_id;
+END$$
+
+-- =====================================================================
+--  PRODUTOS
+-- =====================================================================
+-- Listagem do painel administrativo
+CREATE PROCEDURE sp_produto_listar(IN p_busca VARCHAR(100), IN p_status TINYINT)
+BEGIN
+    SELECT p.id, p.categoria_id, c.nome AS categoria_nome, p.nome, p.descricao, p.capacidade_ml,
+           p.material, p.cor, p.preco, p.estoque, p.imagem, p.destaque, p.data_cadastro, p.status
+      FROM produtos p
+      JOIN categorias c ON c.id = p.categoria_id
+     WHERE p.status = p_status
+       AND (p_busca = '' OR p.nome LIKE CONCAT('%', p_busca, '%')
+                         OR c.nome LIKE CONCAT('%', p_busca, '%')
+                         OR p.cor LIKE CONCAT('%', p_busca, '%'))
+     ORDER BY p.nome;
+END$$
+
+-- Vitrine da loja: so produtos ativos de categorias ativas
+-- p_categoria_id = 0 -> todas | p_ordem: 'nome', 'menor', 'maior', 'novos'
+CREATE PROCEDURE sp_produto_listar_loja(IN p_busca VARCHAR(100), IN p_categoria_id INT, IN p_ordem VARCHAR(10))
+BEGIN
+    SELECT p.id, p.categoria_id, c.nome AS categoria_nome, p.nome, p.descricao, p.capacidade_ml,
+           p.material, p.cor, p.preco, p.estoque, p.imagem, p.destaque, p.data_cadastro, p.status
+      FROM produtos p
+      JOIN categorias c ON c.id = p.categoria_id AND c.status = 1
+     WHERE p.status = 1
+       AND (p_categoria_id = 0 OR p.categoria_id = p_categoria_id)
+       AND (p_busca = '' OR p.nome LIKE CONCAT('%', p_busca, '%')
+                         OR p.descricao LIKE CONCAT('%', p_busca, '%')
+                         OR p.cor LIKE CONCAT('%', p_busca, '%'))
+     ORDER BY
+        CASE WHEN p_ordem = 'menor' THEN p.preco END ASC,
+        CASE WHEN p_ordem = 'maior' THEN p.preco END DESC,
+        CASE WHEN p_ordem = 'novos' THEN p.data_cadastro END DESC,
+        p.nome ASC;
+END$$
+
+CREATE PROCEDURE sp_produto_listar_destaques()
+BEGIN
+    SELECT p.id, p.categoria_id, c.nome AS categoria_nome, p.nome, p.descricao, p.capacidade_ml,
+           p.material, p.cor, p.preco, p.estoque, p.imagem, p.destaque, p.data_cadastro, p.status
+      FROM produtos p
+      JOIN categorias c ON c.id = p.categoria_id AND c.status = 1
+     WHERE p.status = 1 AND p.destaque = 1
+     ORDER BY p.data_cadastro DESC
+     LIMIT 4;
+END$$
+
+CREATE PROCEDURE sp_produto_obter(IN p_id INT)
+BEGIN
+    SELECT p.id, p.categoria_id, c.nome AS categoria_nome, p.nome, p.descricao, p.capacidade_ml,
+           p.material, p.cor, p.preco, p.estoque, p.imagem, p.destaque, p.data_cadastro, p.status
+      FROM produtos p
+      JOIN categorias c ON c.id = p.categoria_id
+     WHERE p.id = p_id;
+END$$
+
+-- p_ids = lista separada por virgula, ex.: '1,5,7' (usado no carrinho)
+CREATE PROCEDURE sp_produto_listar_por_ids(IN p_ids VARCHAR(500))
+BEGIN
+    SELECT p.id, p.categoria_id, c.nome AS categoria_nome, p.nome, p.descricao, p.capacidade_ml,
+           p.material, p.cor, p.preco, p.estoque, p.imagem, p.destaque, p.data_cadastro, p.status
+      FROM produtos p
+      JOIN categorias c ON c.id = p.categoria_id
+     WHERE FIND_IN_SET(p.id, p_ids) > 0 AND p.status = 1;
+END$$
+
+CREATE PROCEDURE sp_produto_relacionados(IN p_id INT, IN p_categoria_id INT)
+BEGIN
+    SELECT p.id, p.categoria_id, c.nome AS categoria_nome, p.nome, p.descricao, p.capacidade_ml,
+           p.material, p.cor, p.preco, p.estoque, p.imagem, p.destaque, p.data_cadastro, p.status
+      FROM produtos p
+      JOIN categorias c ON c.id = p.categoria_id AND c.status = 1
+     WHERE p.status = 1 AND p.categoria_id = p_categoria_id AND p.id <> p_id
+     ORDER BY p.destaque DESC, p.nome
+     LIMIT 4;
+END$$
+
+CREATE PROCEDURE sp_produto_criar(IN p_categoria_id INT, IN p_nome VARCHAR(100), IN p_descricao VARCHAR(500),
+                                  IN p_capacidade_ml INT, IN p_material VARCHAR(50), IN p_cor VARCHAR(30),
+                                  IN p_preco DECIMAL(10,2), IN p_estoque INT, IN p_imagem VARCHAR(200),
+                                  IN p_destaque TINYINT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM categorias WHERE id = p_categoria_id AND status = 1) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Categoria inválida ou excluída.';
+    END IF;
+
+    INSERT INTO produtos (categoria_id, nome, descricao, capacidade_ml, material, cor, preco,
+                          estoque, imagem, destaque)
+    VALUES (p_categoria_id, p_nome, p_descricao, p_capacidade_ml, p_material, p_cor, p_preco,
+            p_estoque, p_imagem, p_destaque);
+END$$
+
+-- p_imagem NULL = mantém a imagem atual
+CREATE PROCEDURE sp_produto_editar(IN p_id INT, IN p_categoria_id INT, IN p_nome VARCHAR(100),
+                                   IN p_descricao VARCHAR(500), IN p_capacidade_ml INT,
+                                   IN p_material VARCHAR(50), IN p_cor VARCHAR(30),
+                                   IN p_preco DECIMAL(10,2), IN p_estoque INT,
+                                   IN p_imagem VARCHAR(200), IN p_destaque TINYINT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM categorias WHERE id = p_categoria_id AND status = 1) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Categoria inválida ou excluída.';
+    END IF;
+
+    UPDATE produtos
+       SET categoria_id = p_categoria_id, nome = p_nome, descricao = p_descricao,
+           capacidade_ml = p_capacidade_ml, material = p_material, cor = p_cor,
+           preco = p_preco, estoque = p_estoque, destaque = p_destaque,
+           imagem = IFNULL(p_imagem, imagem)
+     WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_produto_excluir(IN p_id INT)
+BEGIN
+    UPDATE produtos SET status = 0 WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_produto_reativar(IN p_id INT)
+BEGIN
+    IF EXISTS (SELECT 1 FROM produtos p JOIN categorias c ON c.id = p.categoria_id
+                WHERE p.id = p_id AND c.status = 0) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A categoria deste produto está excluída.';
+    END IF;
+
+    UPDATE produtos SET status = 1 WHERE id = p_id;
+END$$
+
+-- =====================================================================
+--  PEDIDOS
+--  Fluxo da compra (feito em UMA transacao pelo C#):
+--    1) sp_pedido_criar            -> cria o cabecalho e devolve o id
+--    2) sp_pedido_item_adicionar   -> para cada item: valida e baixa o estoque
+--    3) sp_pedido_finalizar        -> soma os itens, calcula frete e total
+-- =====================================================================
+CREATE PROCEDURE sp_pedido_criar(IN p_cliente_id INT, IN p_forma_pagamento VARCHAR(30),
+                                 IN p_endereco VARCHAR(300))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM clientes WHERE id = p_cliente_id AND status = 1) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cliente inválido.';
+    END IF;
+
+    INSERT INTO pedidos (cliente_id, forma_pagamento, endereco_entrega)
+    VALUES (p_cliente_id, p_forma_pagamento, p_endereco);
+
+    SELECT LAST_INSERT_ID() AS id;
+END$$
+
+CREATE PROCEDURE sp_pedido_item_adicionar(IN p_pedido_id INT, IN p_produto_id INT, IN p_quantidade INT)
+BEGIN
+    DECLARE v_preco   DECIMAL(10,2) DEFAULT NULL;
+    DECLARE v_estoque INT DEFAULT 0;
+    DECLARE v_nome    VARCHAR(100) DEFAULT '';
+    DECLARE v_msg     VARCHAR(120);
+
+    IF p_quantidade IS NULL OR p_quantidade <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Quantidade inválida.';
+    END IF;
+
+    -- trava a linha do produto para que duas compras simultaneas nao vendam o mesmo estoque
+    SELECT p.preco, p.estoque, p.nome INTO v_preco, v_estoque, v_nome
+      FROM produtos p
+      JOIN categorias c ON c.id = p.categoria_id AND c.status = 1
+     WHERE p.id = p_produto_id AND p.status = 1
+       FOR UPDATE;
+
+    IF v_preco IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Um dos produtos do carrinho não está mais disponível.';
+    END IF;
+
+    IF v_estoque < p_quantidade THEN
+        SET v_msg = CONCAT('Estoque insuficiente para "', LEFT(v_nome, 40), '". Disponível: ', v_estoque);
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
+    END IF;
+
+    UPDATE produtos SET estoque = estoque - p_quantidade WHERE id = p_produto_id;
+
+    INSERT INTO pedido_itens (pedido_id, produto_id, quantidade, preco_unitario)
+    VALUES (p_pedido_id, p_produto_id, p_quantidade, v_preco);
+END$$
+
+-- Regra de frete: gratis a partir de R$ 150,00; abaixo disso R$ 15,90
+-- (a mesma regra esta em Models/RegrasLoja.cs, usada para exibir o carrinho)
+CREATE PROCEDURE sp_pedido_finalizar(IN p_pedido_id INT)
+BEGIN
+    DECLARE v_produtos DECIMAL(10,2);
+    DECLARE v_frete    DECIMAL(10,2);
+
+    SELECT IFNULL(SUM(quantidade * preco_unitario), 0) INTO v_produtos
+      FROM pedido_itens WHERE pedido_id = p_pedido_id;
+
+    IF v_produtos <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'O pedido não possui itens.';
+    END IF;
+
+    SET v_frete = IF(v_produtos >= 150, 0, 15.90);
+
+    UPDATE pedidos
+       SET valor_produtos = v_produtos,
+           valor_frete    = v_frete,
+           valor_total    = v_produtos + v_frete
+     WHERE id = p_pedido_id;
+END$$
+
+CREATE PROCEDURE sp_pedido_obter(IN p_id INT)
+BEGIN
+    SELECT p.id, p.cliente_id, c.nome AS cliente_nome, c.email AS cliente_email,
+           p.data_pedido, p.situacao, p.forma_pagamento, p.endereco_entrega,
+           p.valor_produtos, p.valor_frete, p.valor_total, p.status,
+           (SELECT IFNULL(SUM(quantidade), 0) FROM pedido_itens i WHERE i.pedido_id = p.id) AS qtd_itens
+      FROM pedidos p
+      JOIN clientes c ON c.id = p.cliente_id
+     WHERE p.id = p_id;
+END$$
+
+CREATE PROCEDURE sp_pedido_itens(IN p_pedido_id INT)
+BEGIN
+    SELECT i.id, i.pedido_id, i.produto_id, pr.nome AS produto_nome, pr.imagem,
+           i.quantidade, i.preco_unitario
+      FROM pedido_itens i
+      JOIN produtos pr ON pr.id = i.produto_id
+     WHERE i.pedido_id = p_pedido_id
+     ORDER BY pr.nome;
+END$$
+
+-- "Minhas compras" do cliente
+CREATE PROCEDURE sp_pedido_listar_cliente(IN p_cliente_id INT)
+BEGIN
+    SELECT p.id, p.cliente_id, c.nome AS cliente_nome, c.email AS cliente_email,
+           p.data_pedido, p.situacao, p.forma_pagamento, p.endereco_entrega,
+           p.valor_produtos, p.valor_frete, p.valor_total, p.status,
+           (SELECT IFNULL(SUM(quantidade), 0) FROM pedido_itens i WHERE i.pedido_id = p.id) AS qtd_itens
+      FROM pedidos p
+      JOIN clientes c ON c.id = p.cliente_id
+     WHERE p.cliente_id = p_cliente_id AND p.status = 1
+     ORDER BY p.data_pedido DESC, p.id DESC;
+END$$
+
+-- Painel administrativo. p_situacao = '' -> todas
+CREATE PROCEDURE sp_pedido_listar(IN p_busca VARCHAR(100), IN p_situacao VARCHAR(20), IN p_status TINYINT)
+BEGIN
+    SELECT p.id, p.cliente_id, c.nome AS cliente_nome, c.email AS cliente_email,
+           p.data_pedido, p.situacao, p.forma_pagamento, p.endereco_entrega,
+           p.valor_produtos, p.valor_frete, p.valor_total, p.status,
+           (SELECT IFNULL(SUM(quantidade), 0) FROM pedido_itens i WHERE i.pedido_id = p.id) AS qtd_itens
+      FROM pedidos p
+      JOIN clientes c ON c.id = p.cliente_id
+     WHERE p.status = p_status
+       AND (p_situacao = '' OR p.situacao = p_situacao)
+       AND (p_busca = '' OR c.nome LIKE CONCAT('%', p_busca, '%')
+                         OR c.email LIKE CONCAT('%', p_busca, '%')
+                         OR (p_busca REGEXP '^[0-9]+$' AND p.id = CAST(p_busca AS UNSIGNED)))
+     ORDER BY p.data_pedido DESC, p.id DESC;
+END$$
+
+-- Avanca o pedido (Pendente > Pago > Enviado > Entregue) ou cancela (so Pendente/Pago).
+-- Ao cancelar, o estoque dos itens volta para a loja.
+CREATE PROCEDURE sp_pedido_alterar_situacao(IN p_id INT, IN p_situacao VARCHAR(20))
+BEGIN
+    DECLARE v_atual VARCHAR(20) DEFAULT NULL;
+
+    SELECT situacao INTO v_atual FROM pedidos WHERE id = p_id AND status = 1 FOR UPDATE;
+
+    IF v_atual IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Pedido não encontrado.';
+    END IF;
+
+    IF p_situacao NOT IN ('Pendente','Pago','Enviado','Entregue','Cancelado') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Situação inválida.';
+    END IF;
+
+    IF v_atual IN ('Entregue','Cancelado') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Pedido encerrado: a situação não pode mais ser alterada.';
+    END IF;
+
+    IF p_situacao = 'Cancelado' THEN
+        IF v_atual NOT IN ('Pendente','Pago') THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Pedido já enviado não pode ser cancelado.';
+        END IF;
+
+        UPDATE produtos pr
+          JOIN pedido_itens i ON i.produto_id = pr.id
+           SET pr.estoque = pr.estoque + i.quantidade
+         WHERE i.pedido_id = p_id;
+    ELSEIF FIELD(p_situacao, 'Pendente','Pago','Enviado','Entregue') <= FIELD(v_atual, 'Pendente','Pago','Enviado','Entregue') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A situação do pedido só pode avançar.';
+    END IF;
+
+    UPDATE pedidos SET situacao = p_situacao WHERE id = p_id;
+END$$
+
+-- O cliente so cancela o proprio pedido, e apenas enquanto estiver Pendente
+CREATE PROCEDURE sp_pedido_cancelar_cliente(IN p_id INT, IN p_cliente_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pedidos WHERE id = p_id AND cliente_id = p_cliente_id AND status = 1) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Pedido não encontrado.';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pedidos WHERE id = p_id AND situacao = 'Pendente') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Só é possível cancelar pedidos com pagamento pendente.';
+    END IF;
+
+    CALL sp_pedido_alterar_situacao(p_id, 'Cancelado');
+END$$
+
+CREATE PROCEDURE sp_pedido_excluir(IN p_id INT)
+BEGIN
+    UPDATE pedidos SET status = 0 WHERE id = p_id;
+END$$
+
+CREATE PROCEDURE sp_pedido_reativar(IN p_id INT)
+BEGIN
+    UPDATE pedidos SET status = 1 WHERE id = p_id;
+END$$
+
+-- =====================================================================
+--  DASHBOARD (painel administrativo)
+--  "Venda" = pedido ativo com situacao Pago, Enviado ou Entregue.
+--  p_dias = tamanho do periodo (ex.: 30 = ultimos 30 dias, contando hoje)
+-- =====================================================================
+CREATE PROCEDURE sp_dashboard_resumo(IN p_dias INT)
+BEGIN
+    DECLARE v_inicio DATE;
+    SET v_inicio = DATE_SUB(CURDATE(), INTERVAL (p_dias - 1) DAY);
+
+    SELECT
+        (SELECT IFNULL(SUM(valor_total), 0) FROM pedidos
+          WHERE status = 1 AND situacao IN ('Pago','Enviado','Entregue')
+            AND DATE(data_pedido) >= v_inicio)                                   AS faturamento,
+        (SELECT COUNT(*) FROM pedidos
+          WHERE status = 1 AND situacao IN ('Pago','Enviado','Entregue')
+            AND DATE(data_pedido) >= v_inicio)                                   AS total_vendas,
+        (SELECT IFNULL(SUM(i.quantidade), 0) FROM pedido_itens i
+           JOIN pedidos p ON p.id = i.pedido_id
+          WHERE p.status = 1 AND p.situacao IN ('Pago','Enviado','Entregue')
+            AND DATE(p.data_pedido) >= v_inicio)                                 AS canecas_vendidas,
+        (SELECT IFNULL(AVG(valor_total), 0) FROM pedidos
+          WHERE status = 1 AND situacao IN ('Pago','Enviado','Entregue')
+            AND DATE(data_pedido) >= v_inicio)                                   AS ticket_medio,
+        (SELECT COUNT(*) FROM pedidos WHERE status = 1 AND situacao = 'Pendente') AS pedidos_pendentes,
+        (SELECT COUNT(*) FROM pedidos WHERE status = 1 AND situacao = 'Pago')     AS pedidos_a_enviar,
+        (SELECT COUNT(*) FROM clientes WHERE status = 1)                         AS total_clientes,
+        (SELECT COUNT(*) FROM clientes
+          WHERE status = 1 AND DATE(data_cadastro) >= v_inicio)                  AS clientes_novos,
+        (SELECT COUNT(*) FROM produtos WHERE status = 1)                         AS produtos_ativos,
+        (SELECT COUNT(*) FROM produtos WHERE status = 1 AND estoque <= 5)        AS estoque_baixo;
+END$$
+
+-- Dias sem venda nao aparecem aqui (o C# completa com zero)
+CREATE PROCEDURE sp_dashboard_vendas_por_dia(IN p_dias INT)
+BEGIN
+    SELECT DATE(data_pedido) AS dia, COUNT(*) AS qtd_pedidos, SUM(valor_total) AS valor
+      FROM pedidos
+     WHERE status = 1 AND situacao IN ('Pago','Enviado','Entregue')
+       AND DATE(data_pedido) >= DATE_SUB(CURDATE(), INTERVAL (p_dias - 1) DAY)
+     GROUP BY DATE(data_pedido)
+     ORDER BY dia;
+END$$
+
+CREATE PROCEDURE sp_dashboard_top_produtos(IN p_dias INT)
+BEGIN
+    SELECT pr.id, pr.nome, pr.imagem, SUM(i.quantidade) AS quantidade,
+           SUM(i.quantidade * i.preco_unitario) AS valor
+      FROM pedido_itens i
+      JOIN pedidos p   ON p.id = i.pedido_id
+      JOIN produtos pr ON pr.id = i.produto_id
+     WHERE p.status = 1 AND p.situacao IN ('Pago','Enviado','Entregue')
+       AND DATE(p.data_pedido) >= DATE_SUB(CURDATE(), INTERVAL (p_dias - 1) DAY)
+     GROUP BY pr.id, pr.nome, pr.imagem
+     ORDER BY quantidade DESC, valor DESC
+     LIMIT 5;
+END$$
+
+CREATE PROCEDURE sp_dashboard_vendas_por_categoria(IN p_dias INT)
+BEGIN
+    SELECT c.nome, SUM(i.quantidade) AS quantidade, SUM(i.quantidade * i.preco_unitario) AS valor
+      FROM pedido_itens i
+      JOIN pedidos p    ON p.id = i.pedido_id
+      JOIN produtos pr  ON pr.id = i.produto_id
+      JOIN categorias c ON c.id = pr.categoria_id
+     WHERE p.status = 1 AND p.situacao IN ('Pago','Enviado','Entregue')
+       AND DATE(p.data_pedido) >= DATE_SUB(CURDATE(), INTERVAL (p_dias - 1) DAY)
+     GROUP BY c.id, c.nome
+     ORDER BY valor DESC;
+END$$
+
+CREATE PROCEDURE sp_dashboard_pedidos_por_situacao(IN p_dias INT)
+BEGIN
+    SELECT situacao, COUNT(*) AS quantidade, IFNULL(SUM(valor_total), 0) AS valor
+      FROM pedidos
+     WHERE status = 1
+       AND DATE(data_pedido) >= DATE_SUB(CURDATE(), INTERVAL (p_dias - 1) DAY)
+     GROUP BY situacao;
+END$$
+
+CREATE PROCEDURE sp_dashboard_estoque_baixo()
+BEGIN
+    SELECT id, nome, imagem, estoque
+      FROM produtos
+     WHERE status = 1 AND estoque <= 5
+     ORDER BY estoque, nome
+     LIMIT 8;
+END$$
+
+CREATE PROCEDURE sp_dashboard_ultimos_pedidos()
+BEGIN
+    SELECT p.id, p.cliente_id, c.nome AS cliente_nome, c.email AS cliente_email,
+           p.data_pedido, p.situacao, p.forma_pagamento, p.endereco_entrega,
+           p.valor_produtos, p.valor_frete, p.valor_total, p.status,
+           (SELECT IFNULL(SUM(quantidade), 0) FROM pedido_itens i WHERE i.pedido_id = p.id) AS qtd_itens
+      FROM pedidos p
+      JOIN clientes c ON c.id = p.cliente_id
+     WHERE p.status = 1
+     ORDER BY p.data_pedido DESC, p.id DESC
+     LIMIT 6;
+END$$
+
+DELIMITER ;

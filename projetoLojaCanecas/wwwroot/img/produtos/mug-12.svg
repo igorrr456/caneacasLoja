@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs><radialGradient id="g" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#fffaf3"/><stop offset="1" stop-color="#f3e9dc"/></radialGradient></defs>
+  <rect width="400" height="400" fill="url(#g)"/>
+  <ellipse cx="200" cy="332" rx="120" ry="14" fill="#000" opacity="0.10"/>
+  <path d="M181 180.8 h34.5 a23.0 23.0 0 0 1 0 64.4 h-34.5" fill="none" stroke="#9c2a22" stroke-width="12.65" stroke-linecap="round"/>
+  <path d="M70 150 h115 v122 a57.5 18 0 0 1 -115 0 z" fill="#c9372c"/>
+  <path d="M83.8 158 v110" stroke="#ffffff" stroke-opacity="0.28" stroke-width="8.05" stroke-linecap="round"/>
+  <ellipse cx="127.5" cy="150" rx="57.5" ry="14" fill="#fdf6ec" stroke="#9c2a22" stroke-width="2"/>
+  <ellipse cx="127.5" cy="151" rx="50.5" ry="9" fill="#5a3825"/>
+  <path d="M326 180.8 h34.5 a23.0 23.0 0 0 1 0 64.4 h-34.5" fill="none" stroke="#bebbb8" stroke-width="12.65" stroke-linecap="round"/>
+  <path d="M215 150 h115 v122 a57.5 18 0 0 1 -115 0 z" fill="#f4f1ec"/>
+  <path d="M228.8 158 v110" stroke="#ffffff" stroke-opacity="0.28" stroke-width="8.05" stroke-linecap="round"/>
+  <ellipse cx="272.5" cy="150" rx="57.5" ry="14" fill="#fdf6ec" stroke="#bebbb8" stroke-width="2"/>
+  <ellipse cx="272.5" cy="151" rx="50.5" ry="9" fill="#5a3825"/><path d="M200 118 l-14 -16 a9 9 0 0 1 14 -10 a9 9 0 0 1 14 10 z" fill="#e8445a"/>
+</svg>

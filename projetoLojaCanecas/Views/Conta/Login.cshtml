@@ -1,0 +1,45 @@
+@model ClienteLoginViewModel
+@{
+    ViewData["Title"] = "Entrar";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h3 text-center mb-1">Entrar</h1>
+                <p class="text-center text-muted mb-4">Acesse sua conta para comprar e acompanhar pedidos</p>
+
+                @if (ViewBag.Erro != null)
+                {
+                    <div class="alert alert-danger">@ViewBag.Erro</div>
+                }
+
+                <form asp-action="Login" method="post">
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" autofocus />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Senha" class="form-label"></label>
+                        <input asp-for="Senha" class="form-control" />
+                        <span asp-validation-for="Senha" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-caramelo w-100">Entrar</button>
+                </form>
+
+                <hr />
+                <p class="text-center mb-0">
+                    Ainda não tem conta?
+                    <a asp-action="Cadastrar" asp-route-returnUrl="@Model.ReturnUrl">Cadastre-se</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

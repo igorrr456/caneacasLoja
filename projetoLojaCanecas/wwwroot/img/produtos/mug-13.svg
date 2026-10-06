@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs><radialGradient id="g" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#fffaf3"/><stop offset="1" stop-color="#f3e9dc"/></radialGradient></defs>
+  <rect width="400" height="400" fill="url(#g)"/>
+  <ellipse cx="200" cy="332" rx="120" ry="14" fill="#000" opacity="0.10"/><g fill="none" stroke="#c9b8a6" stroke-width="4" stroke-linecap="round" opacity="0.8"><path d="M172.5 81 q-8 -14 0 -26 q8 -12 0 -24"/><path d="M196.5 85 q-8 -14 0 -26 q8 -12 0 -24"/><path d="M220.5 81 q-8 -14 0 -26 q8 -12 0 -24"/></g>
+  <path d="M271 142.3 h49.5 a33.0 33.0 0 0 1 0 98.9 h-49.5" fill="none" stroke="#39799c" stroke-width="18.15" stroke-linecap="round"/>
+  <path d="M110 95 h165 v197 a82.5 18 0 0 1 -165 0 z" fill="#4a9cc8"/>
+  <path d="M129.8 103 v185" stroke="#ffffff" stroke-opacity="0.28" stroke-width="11.55" stroke-linecap="round"/>
+  <ellipse cx="192.5" cy="95" rx="82.5" ry="14" fill="#fdf6ec" stroke="#39799c" stroke-width="2"/>
+  <ellipse cx="192.5" cy="96" rx="75.5" ry="9" fill="#5a3825"/><path d="M192.5 220.5 l-22 -22 a12 12 0 0 1 22 -14 a12 12 0 0 1 22 14 z" fill="#e8445a"/>
+</svg>

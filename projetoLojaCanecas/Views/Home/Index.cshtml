@@ -1,0 +1,77 @@
+@model VitrineViewModel
+@{
+    ViewData["Title"] = "Canecas";
+}
+
+@if (Model.SemFiltro)
+{
+    <section class="hero mb-4">
+        <h1 class="display-5">Cada gole merece uma caneca especial</h1>
+        <p class="lead col-lg-7 mb-3">Clássicas, divertidas, térmicas e kits para presente. Escolha a sua, compre em poucos cliques e receba em casa.</p>
+        <a href="#catalogo" class="btn btn-caramelo btn-lg">Ver todas as canecas</a>
+    </section>
+
+    @if (Model.Destaques.Count > 0)
+    {
+        <h2 class="h4 mb-3">&#11088; Em destaque</h2>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3 mb-5">
+            @foreach (var produto in Model.Destaques)
+            {
+                <div class="col"><partial name="_ProdutoCard" model="produto" /></div>
+            }
+        </div>
+    }
+}
+
+<div id="catalogo" class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h2 class="h4 mb-0 me-2">
+        @if (!string.IsNullOrWhiteSpace(Model.Busca))
+        {
+            <text>Resultados para "@Model.Busca"</text>
+        }
+        else
+        {
+            <text>Todas as canecas</text>
+        }
+    </h2>
+    <span class="text-muted small">@Model.Produtos.Count produto(s)</span>
+
+    <form asp-action="Index" method="get" class="ms-auto d-flex gap-2">
+        <input type="hidden" name="busca" value="@Model.Busca" />
+        <input type="hidden" name="categoriaId" value="@Model.CategoriaId" />
+        <select name="ordem" class="form-select form-select-sm" onchange="this.form.submit()" aria-label="Ordenar por">
+            <option value="" selected="@(Model.Ordem == "")">Ordenar: nome (A-Z)</option>
+            <option value="menor" selected="@(Model.Ordem == "menor")">Menor preço</option>
+            <option value="maior" selected="@(Model.Ordem == "maior")">Maior preço</option>
+            <option value="novos" selected="@(Model.Ordem == "novos")">Mais novas</option>
+        </select>
+    </form>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a asp-action="Index" asp-route-busca="@Model.Busca" asp-route-ordem="@Model.Ordem"
+       class="pill @(Model.CategoriaId == 0 ? "ativa" : "")">Todas</a>
+    @foreach (var cat in Model.Categorias)
+    {
+        <a asp-action="Index" asp-route-categoriaId="@cat.Id" asp-route-busca="@Model.Busca" asp-route-ordem="@Model.Ordem"
+           class="pill @(Model.CategoriaId == cat.Id ? "ativa" : "")">@cat.Nome</a>
+    }
+</div>
+
+@if (Model.Produtos.Count == 0)
+{
+    <div class="text-center text-muted py-5">
+        <div style="font-size:3rem">&#9749;</div>
+        <p class="mb-2">Nenhuma caneca encontrada.</p>
+        <a asp-action="Index" class="btn btn-outline-cafe">Limpar filtros</a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+        @foreach (var produto in Model.Produtos)
+        {
+            <div class="col"><partial name="_ProdutoCard" model="produto" /></div>
+        }
+    </div>
+}

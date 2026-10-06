@@ -1,0 +1,94 @@
+@model Produto
+@{
+    ViewData["Title"] = Model.Nome;
+    var relacionados = (List<Produto>)ViewBag.Relacionados;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Canecas</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" asp-route-categoriaId="@Model.CategoriaId">@Model.CategoriaNome</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Nome</li>
+    </ol>
+</nav>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="produto-card">
+            <div class="foto"><img src="@Model.ImagemUrl" alt="@Model.Nome" /></div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="text-uppercase small text-muted">@Model.CategoriaNome</div>
+        <h1 class="h2">@Model.Nome</h1>
+
+        <div class="preco-grande my-2">@Model.Preco.ToString("C")</div>
+        <div class="text-muted mb-3">ou 3x de @((Model.Preco / 3).ToString("C")) sem juros</div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Descricao))
+        {
+            <p>@Model.Descricao</p>
+        }
+
+        <table class="table table-sm w-auto mb-3">
+            <tbody>
+                <tr><th class="pe-4">Capacidade</th><td>@Model.CapacidadeMl ml</td></tr>
+                @if (!string.IsNullOrEmpty(Model.Material)) { <tr><th>Material</th><td>@Model.Material</td></tr> }
+                @if (!string.IsNullOrEmpty(Model.Cor)) { <tr><th>Cor</th><td>@Model.Cor</td></tr> }
+                <tr>
+                    <th>Disponibilidade</th>
+                    <td>
+                        @if (!Model.Disponivel)
+                        {
+                            <span class="badge bg-dark">Esgotada</span>
+                        }
+                        else if (Model.Estoque <= RegrasLoja.EstoqueBaixo)
+                        {
+                            <span class="badge bg-warning text-dark">Últimas @Model.Estoque unidades</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Em estoque</span>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        @if (Model.Disponivel)
+        {
+            <form asp-controller="Carrinho" asp-action="Adicionar" method="post" class="mb-3">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+                <label class="form-label d-block">Quantidade</label>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="qty-stepper">
+                        <button type="button" data-qty-step="-1" aria-label="Diminuir">&minus;</button>
+                        <input type="number" name="qtd" value="1" min="1" max="@Math.Min(Model.Estoque, 99)" aria-label="Quantidade" />
+                        <button type="button" data-qty-step="1" aria-label="Aumentar">+</button>
+                    </div>
+                    <button type="submit" name="comprarAgora" value="true" class="btn btn-caramelo btn-lg">Comprar agora</button>
+                    <button type="submit" name="comprarAgora" value="false" class="btn btn-outline-cafe btn-lg">Adicionar ao carrinho</button>
+                </div>
+            </form>
+        }
+
+        <div class="small text-muted">
+            &#128666; Frete grátis acima de @RegrasLoja.FreteGratisAPartirDe.ToString("C"); abaixo disso, @RegrasLoja.ValorFrete.ToString("C").<br />
+            &#128274; Para finalizar a compra você precisa estar cadastrado.
+        </div>
+    </div>
+</div>
+
+@if (relacionados.Count > 0)
+{
+    <h2 class="h4 mb-3">Você também pode gostar</h2>
+    <div class="row row-cols-2 row-cols-md-4 g-3">
+        @foreach (var produto in relacionados)
+        {
+            <div class="col"><partial name="_ProdutoCard" model="produto" /></div>
+        }
+    </div>
+}

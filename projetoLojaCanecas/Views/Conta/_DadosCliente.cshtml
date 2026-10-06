@@ -1,0 +1,69 @@
+@model Cliente
+@* Campos de cadastro do cliente (usado no cadastro e em "Meus dados") *@
+<div class="row">
+    <div class="col-md-8 mb-3">
+        <label asp-for="Nome" class="form-label"></label>
+        <input asp-for="Nome" class="form-control" />
+        <span asp-validation-for="Nome" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="Cpf" class="form-label"></label>
+        <input asp-for="Cpf" class="form-control" data-mask="cpf" placeholder="000.000.000-00" />
+        <span asp-validation-for="Cpf" class="text-danger"></span>
+    </div>
+    <div class="col-md-8 mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="Telefone" class="form-label"></label>
+        <input asp-for="Telefone" class="form-control" data-mask="tel" placeholder="(00) 00000-0000" />
+        <span asp-validation-for="Telefone" class="text-danger"></span>
+    </div>
+</div>
+
+<h2 class="h5 mt-2">Endereço de entrega</h2>
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <label asp-for="Cep" class="form-label"></label>
+        <input asp-for="Cep" class="form-control" data-mask="cep" placeholder="00000-000" />
+        <span asp-validation-for="Cep" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="Endereco" class="form-label"></label>
+        <input asp-for="Endereco" class="form-control" />
+        <span asp-validation-for="Endereco" class="text-danger"></span>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="Numero" class="form-label"></label>
+        <input asp-for="Numero" class="form-control" />
+        <span asp-validation-for="Numero" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="Complemento" class="form-label"></label>
+        <input asp-for="Complemento" class="form-control" />
+        <span asp-validation-for="Complemento" class="text-danger"></span>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="Bairro" class="form-label"></label>
+        <input asp-for="Bairro" class="form-control" />
+        <span asp-validation-for="Bairro" class="text-danger"></span>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="Cidade" class="form-label"></label>
+        <input asp-for="Cidade" class="form-control" />
+        <span asp-validation-for="Cidade" class="text-danger"></span>
+    </div>
+    <div class="col-md-2 mb-3">
+        <label asp-for="Uf" class="form-label"></label>
+        <select asp-for="Uf" class="form-select">
+            <option value="">--</option>
+            @foreach (var uf in RegrasLoja.Ufs)
+            {
+                <option value="@uf" selected="@(Model.Uf == uf)">@uf</option>
+            }
+        </select>
+        <span asp-validation-for="Uf" class="text-danger"></span>
+    </div>
+</div>

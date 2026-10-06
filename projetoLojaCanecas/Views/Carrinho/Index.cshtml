@@ -1,0 +1,120 @@
+@model CarrinhoViewModel
+@{
+    ViewData["Title"] = "Carrinho";
+    bool logado = Context.Session.GetInt32(SessionKeys.ClienteId) != null;
+}
+
+<h1 class="h3 mb-4">&#128722; Meu carrinho</h1>
+
+@if (Model.Linhas.Count == 0)
+{
+    <div class="text-center py-5">
+        <div style="font-size:3.5rem">&#9749;</div>
+        <p class="lead">Seu carrinho está vazio.</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-caramelo">Ver canecas</a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="resumo-card p-3">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Produto</th>
+                            <th class="text-end">Preço</th>
+                            <th class="text-center">Quantidade</th>
+                            <th class="text-end">Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var linha in Model.Linhas)
+                        {
+                            <tr>
+                                <td style="width:80px">
+                                    <a asp-controller="Produtos" asp-action="Detalhes" asp-route-id="@linha.Produto.Id">
+                                        <img src="@linha.Produto.ImagemUrl" alt="@linha.Produto.Nome" class="thumb" />
+                                    </a>
+                                </td>
+                                <td>
+                                    <a asp-controller="Produtos" asp-action="Detalhes" asp-route-id="@linha.Produto.Id" class="fw-semibold text-decoration-none">@linha.Produto.Nome</a>
+                                    <div class="small text-muted">@linha.Produto.CapacidadeMl ml @(string.IsNullOrEmpty(linha.Produto.Cor) ? "" : "· " + linha.Produto.Cor)</div>
+                                </td>
+                                <td class="text-end text-nowrap">@linha.Produto.Preco.ToString("C")</td>
+                                <td class="text-center">
+                                    <form asp-action="Atualizar" method="post" class="d-inline-flex gap-1 align-items-center">
+                                        <input type="hidden" name="id" value="@linha.Produto.Id" />
+                                        <div class="qty-stepper">
+                                            <button type="button" data-qty-step="-1" aria-label="Diminuir">&minus;</button>
+                                            <input type="number" name="qtd" value="@linha.Quantidade" min="1" max="@Math.Min(linha.Produto.Estoque, 99)" aria-label="Quantidade" />
+                                            <button type="button" data-qty-step="1" aria-label="Aumentar">+</button>
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-outline-cafe">Atualizar</button>
+                                    </form>
+                                </td>
+                                <td class="text-end text-nowrap fw-semibold">@linha.Subtotal.ToString("C")</td>
+                                <td class="text-end">
+                                    <form asp-action="Remover" method="post">
+                                        <input type="hidden" name="id" value="@linha.Produto.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover do carrinho">Remover</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-cafe">&larr; Continuar comprando</a>
+                <form asp-action="Limpar" method="post" class="ms-auto" onsubmit="return confirm('Esvaziar o carrinho?');">
+                    <button type="submit" class="btn btn-link text-danger">Esvaziar carrinho</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="resumo-card p-3">
+                <h2 class="h5 mb-3">Resumo do pedido</h2>
+
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Produtos (@Model.TotalItens)</span><span>@Model.Subtotal.ToString("C")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Frete</span>
+                    <span>@(Model.Frete == 0 ? "Grátis" : Model.Frete.ToString("C"))</span>
+                </div>
+                <hr />
+                <div class="d-flex justify-content-between align-items-baseline mb-3">
+                    <span class="fw-semibold">Total</span>
+                    <span class="preco">@Model.Total.ToString("C")</span>
+                </div>
+
+                @if (Model.FaltaParaFreteGratis > 0)
+                {
+                    <div class="small text-muted mb-3">
+                        Faltam <strong>@Model.FaltaParaFreteGratis.ToString("C")</strong> para ganhar frete grátis.
+                    </div>
+                }
+
+                @if (logado)
+                {
+                    <a asp-controller="Checkout" asp-action="Index" class="btn btn-caramelo btn-lg w-100">Finalizar compra</a>
+                }
+                else
+                {
+                    <div class="alert alert-warning small">
+                        Para finalizar a compra você precisa <strong>entrar</strong> ou <strong>se cadastrar</strong>.
+                        Seu carrinho fica guardado.
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a asp-controller="Conta" asp-action="Login" asp-route-returnUrl="/Checkout" class="btn btn-caramelo">Entrar e finalizar</a>
+                        <a asp-controller="Conta" asp-action="Cadastrar" asp-route-returnUrl="/Checkout" class="btn btn-outline-cafe">Criar minha conta</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

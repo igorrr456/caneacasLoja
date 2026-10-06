@@ -1,0 +1,73 @@
+@model Pedido
+@{
+    ViewData["Title"] = "Pedido #" + Model.Id;
+    string[] etapas = { "Pendente", "Pago", "Enviado", "Entregue" };
+    int posicao = Array.IndexOf(etapas, Model.Situacao);
+    bool cancelado = Model.Situacao == "Cancelado";
+}
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+    <h1 class="h3 mb-0">Pedido #@Model.Id</h1>
+    <span class="badge bg-@RegrasLoja.CorSituacao(Model.Situacao) fs-6">@Model.Situacao</span>
+    <a asp-action="Index" class="btn btn-sm btn-outline-cafe ms-auto">&larr; Minhas compras</a>
+</div>
+<div class="text-muted mb-3">Realizado em @Model.DataPedido.ToString("dd/MM/yyyy 'às' HH:mm")</div>
+
+@if (cancelado)
+{
+    <div class="alert alert-danger">Este pedido foi cancelado.</div>
+}
+else
+{
+    <div class="etapas">
+        @for (int i = 0; i < etapas.Length; i++)
+        {
+            <div class="etapa @(i <= posicao ? "feita" : "")">@(i <= posicao ? "✔ " : "")@etapas[i]</div>
+        }
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="resumo-card p-3">
+            <table class="table align-middle mb-0">
+                <thead><tr><th colspan="2">Produto</th><th class="text-center">Qtde</th><th class="text-end">Preço</th><th class="text-end">Subtotal</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.Itens)
+                    {
+                        <tr>
+                            <td style="width:72px"><img src="@item.ImagemUrl" alt="" class="thumb" /></td>
+                            <td>
+                                <a asp-controller="Produtos" asp-action="Detalhes" asp-route-id="@item.ProdutoId" class="text-decoration-none fw-semibold">@item.ProdutoNome</a>
+                            </td>
+                            <td class="text-center">@item.Quantidade</td>
+                            <td class="text-end">@item.PrecoUnitario.ToString("C")</td>
+                            <td class="text-end">@item.Subtotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="resumo-card p-3 mb-3">
+            <div class="d-flex justify-content-between mb-1"><span>Produtos</span><span>@Model.ValorProdutos.ToString("C")</span></div>
+            <div class="d-flex justify-content-between mb-1"><span>Frete</span><span>@(Model.ValorFrete == 0 ? "Grátis" : Model.ValorFrete.ToString("C"))</span></div>
+            <hr />
+            <div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>@Model.ValorTotal.ToString("C")</span></div>
+        </div>
+        <div class="resumo-card p-3 small">
+            <div class="mb-2"><strong>Pagamento:</strong> @Model.FormaPagamento</div>
+            <div><strong>Entrega:</strong> @Model.EnderecoEntrega</div>
+        </div>
+
+        @if (Model.Situacao == "Pendente")
+        {
+            <form asp-action="Cancelar" asp-route-id="@Model.Id" method="post" class="mt-3"
+                  onsubmit="return confirm('Deseja realmente cancelar este pedido?');">
+                <button type="submit" class="btn btn-outline-danger w-100">Cancelar pedido</button>
+            </form>
+        }
+    </div>
+</div>

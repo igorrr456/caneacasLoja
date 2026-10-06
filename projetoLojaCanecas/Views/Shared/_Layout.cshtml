@@ -1,0 +1,110 @@
+@{
+    var logado = Context.Session.GetInt32(SessionKeys.ClienteId) != null;
+    var clienteNome = Context.Session.GetString(SessionKeys.ClienteNome);
+    var primeiroNome = (clienteNome ?? "").Split(' ')[0];
+    int qtdCarrinho = CarrinhoHelper.TotalItens(Context.Session);
+}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Loja de Canecas</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="faixa-frete">&#128666; Frete grátis em compras acima de @RegrasLoja.FreteGratisAPartirDe.ToString("C")</div>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-loja mb-4">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">&#9749; Loja de Canecas</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuLoja"
+                        aria-expanded="false" aria-label="Menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="menuLoja">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Canecas</a></li>
+                        @if (logado)
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Pedidos" asp-action="Index">Minhas compras</a></li>
+                        }
+                    </ul>
+
+                    <form asp-area="" asp-controller="Home" asp-action="Index" method="get" class="d-flex me-lg-3 my-2 my-lg-0">
+                        <input type="search" name="busca" class="form-control form-control-sm" placeholder="Buscar caneca..." />
+                        <button type="submit" class="btn btn-sm btn-caramelo ms-1">Buscar</button>
+                    </form>
+
+                    <ul class="navbar-nav align-items-lg-center">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Carrinho" asp-action="Index">
+                                &#128722; Carrinho
+                                @if (qtdCarrinho > 0)
+                                {
+                                    <span class="badge rounded-pill badge-carrinho">@qtdCarrinho</span>
+                                }
+                            </a>
+                        </li>
+                        @if (logado)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Olá, @primeiroNome
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" asp-area="" asp-controller="Pedidos" asp-action="Index">Minhas compras</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-controller="Conta" asp-action="MinhaConta">Meus dados</a></li>
+                                    <li><a class="dropdown-item" asp-area="" asp-controller="Conta" asp-action="AlterarSenha">Alterar senha</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><a class="dropdown-item text-danger" asp-area="" asp-controller="Conta" asp-action="Sair">Sair</a></li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Conta" asp-action="Login">Entrar</a></li>
+                            <li class="nav-item ms-lg-1">
+                                <a class="btn btn-sm btn-caramelo" asp-area="" asp-controller="Conta" asp-action="Cadastrar">Cadastre-se</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-4">
+            @if (TempData["Mensagem"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Mensagem"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+            }
+            @if (TempData["Erro"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Erro"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="footer-loja">
+        <div class="container d-flex flex-wrap justify-content-between gap-2">
+            <span>&copy; 2026 - Loja de Canecas &middot; Projeto acadêmico em ASP.NET Core MVC + MySQL</span>
+            <a asp-area="Admin" asp-controller="Login" asp-action="Index">Área administrativa</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,101 @@
+@model Pedido
+@{
+    ViewData["Title"] = "Pedido #" + Model.Id;
+}
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Pedido #@Model.Id</h1>
+    <span class="badge bg-@RegrasLoja.CorSituacao(Model.Situacao) fs-6">@Model.Situacao</span>
+    @if (Model.Status == 0)
+    {
+        <span class="badge bg-dark fs-6">Excluído</span>
+    }
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary ms-auto">&larr; Pedidos</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0 table-admin">
+                    <thead><tr><th colspan="2">Produto</th><th class="text-center">Qtde</th><th class="text-end">Preço</th><th class="text-end">Subtotal</th></tr></thead>
+                    <tbody>
+                        @foreach (var item in Model.Itens)
+                        {
+                            <tr>
+                                <td style="width:56px"><img src="@item.ImagemUrl" class="thumb-sm" alt="" /></td>
+                                <td>@item.ProdutoNome</td>
+                                <td class="text-center">@item.Quantidade</td>
+                                <td class="text-end">@item.PrecoUnitario.ToString("C")</td>
+                                <td class="text-end">@item.Subtotal.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr><td colspan="4" class="text-end">Produtos</td><td class="text-end">@Model.ValorProdutos.ToString("C")</td></tr>
+                        <tr><td colspan="4" class="text-end">Frete</td><td class="text-end">@(Model.ValorFrete == 0 ? "Grátis" : Model.ValorFrete.ToString("C"))</td></tr>
+                        <tr class="fw-bold"><td colspan="4" class="text-end">Total</td><td class="text-end">@Model.ValorTotal.ToString("C")</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-body small">
+                <h2 class="h6">Cliente</h2>
+                <div>
+                    <a asp-controller="Clientes" asp-action="Detalhes" asp-route-id="@Model.ClienteId">@Model.ClienteNome</a><br />
+                    @Model.ClienteEmail
+                </div>
+                <hr />
+                <div><strong>Data:</strong> @Model.DataPedido.ToString("dd/MM/yyyy HH:mm")</div>
+                <div><strong>Pagamento:</strong> @Model.FormaPagamento</div>
+                <div><strong>Entrega:</strong> @Model.EnderecoEntrega</div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6">Andamento do pedido</h2>
+
+                @if (Model.ProximaSituacao != null && Model.Status == 1)
+                {
+                    <form asp-action="AlterarSituacao" asp-route-id="@Model.Id" method="post" class="mb-2">
+                        <input type="hidden" name="situacao" value="@Model.ProximaSituacao" />
+                        <button type="submit" class="btn btn-caramelo w-100">
+                            Marcar como "@Model.ProximaSituacao"
+                        </button>
+                    </form>
+                }
+                @if (Model.PodeCancelar && Model.Status == 1)
+                {
+                    <form asp-action="AlterarSituacao" asp-route-id="@Model.Id" method="post"
+                          onsubmit="return confirm('Cancelar este pedido? O estoque dos itens volta para a loja.');">
+                        <input type="hidden" name="situacao" value="Cancelado" />
+                        <button type="submit" class="btn btn-outline-danger w-100">Cancelar pedido</button>
+                    </form>
+                }
+                @if (Model.ProximaSituacao == null)
+                {
+                    <p class="text-muted small mb-0">Pedido encerrado (@Model.Situacao).</p>
+                }
+            </div>
+        </div>
+
+        @if (Model.Status == 1)
+        {
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post"
+                  onsubmit="return confirm('Excluir este pedido da listagem? (exclusão lógica)');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Excluir pedido da listagem</button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Reativar" asp-route-id="@Model.Id" method="post">
+                <button type="submit" class="btn btn-sm btn-success">Reativar pedido</button>
+            </form>
+        }
+    </div>
+</div>

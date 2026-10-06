@@ -1,0 +1,44 @@
+@model CadastroClienteViewModel
+@{
+    ViewData["Title"] = "Cadastre-se";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h3 mb-1">Criar minha conta</h1>
+                <p class="text-muted">Cadastre-se gratuitamente para finalizar suas compras e acompanhar seus pedidos.</p>
+
+                <form asp-action="Cadastrar" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <partial name="_DadosCliente" model="Model" />
+
+                    <h2 class="h5 mt-2">Acesso</h2>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Senha" class="form-label"></label>
+                            <input asp-for="Senha" class="form-control" />
+                            <span asp-validation-for="Senha" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ConfirmarSenha" class="form-label"></label>
+                            <input asp-for="ConfirmarSenha" class="form-control" />
+                            <span asp-validation-for="ConfirmarSenha" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-caramelo">Cadastrar</button>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <span class="ms-3">Já tem conta? <a asp-action="Login" asp-route-returnUrl="@Model.ReturnUrl">Entrar</a></span>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

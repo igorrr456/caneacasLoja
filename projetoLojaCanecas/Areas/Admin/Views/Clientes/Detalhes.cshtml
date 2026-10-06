@@ -1,0 +1,63 @@
+@model Cliente
+@{
+    ViewData["Title"] = Model.Nome;
+    var pedidos = (List<Pedido>)ViewBag.Pedidos;
+}
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.Nome</h1>
+    @if (Model.Status == 0)
+    {
+        <span class="badge bg-dark">Excluído</span>
+    }
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary ms-auto">&larr; Clientes</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body small">
+                <h2 class="h6">Dados</h2>
+                <div><strong>E-mail:</strong> @Model.Email</div>
+                <div><strong>CPF:</strong> @Model.Cpf</div>
+                <div><strong>Telefone:</strong> @(string.IsNullOrEmpty(Model.Telefone) ? "-" : Model.Telefone)</div>
+                <div><strong>Cliente desde:</strong> @Model.DataCadastro.ToString("dd/MM/yyyy")</div>
+                <hr />
+                <h2 class="h6">Endereço</h2>
+                <div>@Model.EnderecoCompleto</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6">Histórico de compras</h2>
+                @if (pedidos.Count == 0)
+                {
+                    <p class="text-muted mb-0">Este cliente ainda não fez compras.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 table-admin">
+                            <thead><tr><th>Pedido</th><th>Data</th><th>Situação</th><th class="text-end">Total</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var p in pedidos)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">#@p.Id</td>
+                                        <td>@p.DataPedido.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td><span class="badge bg-@RegrasLoja.CorSituacao(p.Situacao)">@p.Situacao</span></td>
+                                        <td class="text-end">@p.ValorTotal.ToString("C")</td>
+                                        <td class="text-end"><a asp-controller="Pedidos" asp-action="Detalhes" asp-route-id="@p.Id" class="btn btn-sm btn-outline-cafe">Abrir</a></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

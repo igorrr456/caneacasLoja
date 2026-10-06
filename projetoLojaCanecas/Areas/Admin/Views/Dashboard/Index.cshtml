@@ -1,0 +1,273 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+
+    // ---- geometria do grafico de vendas por dia (SVG desenhado aqui mesmo, sem bibliotecas) ----
+    const int largura = 900, altura = 260, margemEsq = 56, margemBase = 28, margemTopo = 10;
+    decimal maximo = Model.VendasPorDia.Count == 0 ? 0 : Model.VendasPorDia.Max(v => v.Valor);
+
+    // arredonda o topo da escala para um numero "redondo" (ex.: 1.730 -> 2.000)
+    decimal topo = 100;
+    if (maximo > 0)
+    {
+        double grandeza = Math.Pow(10, Math.Floor(Math.Log10((double)maximo)));
+        topo = (decimal)(Math.Ceiling((double)maximo / grandeza) * grandeza);
+    }
+
+    int n = Model.VendasPorDia.Count;
+    double areaW = largura - margemEsq - 8;
+    double areaH = altura - margemBase - margemTopo;
+    double passo = n == 0 ? 0 : areaW / n;
+    double larguraBarra = Math.Max(3, passo - Math.Max(2, passo * 0.25));
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    // <text> do SVG conflita com a tag <text> do Razor, entao os rotulos sao montados como string
+    string Rotulo(double x, double y, string alinhamento, string conteudo) =>
+        $"<text x=\"{x.ToString("0.##", inv)}\" y=\"{y.ToString("0.##", inv)}\" text-anchor=\"{alinhamento}\">{conteudo}</text>";
+
+    // maior valor dos rankings, para dimensionar as barras horizontais
+    decimal maxTop = Model.TopProdutos.Count == 0 ? 1 : Model.TopProdutos.Max(x => x.Quantidade);
+    decimal maxCat = Model.VendasPorCategoria.Count == 0 ? 1 : Model.VendasPorCategoria.Max(x => x.Valor);
+    int maxSit = Math.Max(1, Model.PedidosPorSituacao.Max(x => x.Quantidade));
+}
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Dashboard de vendas</h1>
+    <div class="ms-auto btn-group" role="group" aria-label="Período">
+        @foreach (var d in new[] { 7, 30, 90 })
+        {
+            <a asp-action="Index" asp-route-dias="@d" class="btn btn-sm @(Model.Dias == d ? "btn-caramelo" : "btn-outline-cafe")">@d dias</a>
+        }
+    </div>
+</div>
+
+@* ---------- indicadores ---------- *@
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="rotulo">Faturamento</div>
+            <div class="valor">@Model.Faturamento.ToString("C")</div>
+            <div class="detalhe">últimos @Model.Dias dias (pago, enviado ou entregue)</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="rotulo">Vendas</div>
+            <div class="valor">@Model.TotalVendas</div>
+            <div class="detalhe">@Model.CanecasVendidas canecas vendidas</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="rotulo">Ticket médio</div>
+            <div class="valor">@Model.TicketMedio.ToString("C")</div>
+            <div class="detalhe">valor médio por venda</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="rotulo">Clientes</div>
+            <div class="valor">@Model.TotalClientes</div>
+            <div class="detalhe">+@Model.ClientesNovos novos no período</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <a asp-controller="Pedidos" asp-action="Index" asp-route-situacao="Pendente" class="text-decoration-none">
+            <div class="kpi @(Model.PedidosPendentes > 0 ? "alerta" : "")">
+                <div class="rotulo">Aguardando pagamento</div>
+                <div class="valor">@Model.PedidosPendentes</div>
+                <div class="detalhe">pedidos pendentes</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a asp-controller="Pedidos" asp-action="Index" asp-route-situacao="Pago" class="text-decoration-none">
+            <div class="kpi">
+                <div class="rotulo">Prontos para enviar</div>
+                <div class="valor">@Model.PedidosAEnviar</div>
+                <div class="detalhe">pagos, ainda não enviados</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a asp-controller="Produtos" asp-action="Index" class="text-decoration-none">
+            <div class="kpi">
+                <div class="rotulo">Canecas ativas</div>
+                <div class="valor">@Model.ProdutosAtivos</div>
+                <div class="detalhe">no catálogo da loja</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi @(Model.EstoqueBaixo > 0 ? "alerta" : "")">
+            <div class="rotulo">Estoque baixo</div>
+            <div class="valor">@Model.EstoqueBaixo</div>
+            <div class="detalhe">até @RegrasLoja.EstoqueBaixo unidades</div>
+        </div>
+    </div>
+</div>
+
+@* ---------- vendas por dia ---------- *@
+<div class="card mb-3">
+    <div class="card-body">
+        <h2 class="h6 mb-1">Vendas por dia (R$)</h2>
+        <div class="text-muted small mb-2">Passe o mouse sobre uma barra para ver o dia, o valor e a quantidade de pedidos.</div>
+
+        @if (Model.TotalVendas == 0)
+        {
+            <p class="text-muted my-4 text-center">Nenhuma venda no período.</p>
+        }
+        else
+        {
+            <svg class="grafico" viewBox="0 0 @largura @altura" role="img" aria-label="Gráfico de barras com o faturamento diário dos últimos @Model.Dias dias">
+                @* linhas de grade e escala vertical *@
+                @for (int g = 0; g <= 4; g++)
+                {
+                    double y = margemTopo + areaH - (areaH * g / 4.0);
+                    <line x1="@margemEsq" x2="@largura" y1="@y.ToString("0.##", inv)" y2="@y.ToString("0.##", inv)"></line>
+                    @Html.Raw(Rotulo(margemEsq - 6, y + 4, "end", (topo * g / 4).ToString("N0")))
+                }
+
+                @for (int i = 0; i < n; i++)
+                {
+                    var v = Model.VendasPorDia[i];
+                    double h = topo == 0 ? 0 : (double)(v.Valor / topo) * areaH;
+                    double x = margemEsq + i * passo + (passo - larguraBarra) / 2;
+                    double y = margemTopo + areaH - h;
+
+                    if (v.Valor > 0)
+                    {
+                        <rect class="barra" x="@x.ToString("0.##", inv)" y="@y.ToString("0.##", inv)" width="@larguraBarra.ToString("0.##", inv)" height="@h.ToString("0.##", inv)" rx="3">
+                            <title>@v.Dia.ToString("dd/MM/yyyy"): @v.Valor.ToString("C") (@v.QtdPedidos pedido(s))</title>
+                        </rect>
+                    }
+
+                    @* rotulo do eixo X: mostra so alguns dias para nao encavalar *@
+                    if (i % Math.Max(1, (int)Math.Ceiling(n / 10.0)) == 0 || i == n - 1)
+                    {
+                        @Html.Raw(Rotulo(x + larguraBarra / 2, altura - 8, "middle", v.Dia.ToString("dd/MM")))
+                    }
+                }
+            </svg>
+        }
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    @* ---------- top produtos ---------- *@
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Canecas mais vendidas</h2>
+                @if (Model.TopProdutos.Count == 0)
+                {
+                    <p class="text-muted">Sem vendas no período.</p>
+                }
+                @foreach (var item in Model.TopProdutos)
+                {
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <img class="thumb-sm" src="@(string.IsNullOrEmpty(item.Imagem) ? "/img/sem-foto.svg" : "/img/produtos/" + item.Imagem)" alt="" />
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between small">
+                                <span class="fw-semibold">@item.Nome</span>
+                                <span>@item.Quantidade un. &middot; @item.Valor.ToString("C")</span>
+                            </div>
+                            <div class="barra-h"><span style="width:@((item.Quantidade * 100 / maxTop).ToString("0", inv))%"></span></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ---------- por categoria ---------- *@
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Faturamento por categoria</h2>
+                @if (Model.VendasPorCategoria.Count == 0)
+                {
+                    <p class="text-muted">Sem vendas no período.</p>
+                }
+                @foreach (var item in Model.VendasPorCategoria)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small">
+                            <span class="fw-semibold">@item.Nome</span>
+                            <span>@item.Valor.ToString("C") &middot; @item.Quantidade un.</span>
+                        </div>
+                        <div class="barra-h"><span style="width:@((item.Valor * 100 / maxCat).ToString("0", inv))%"></span></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    @* ---------- pedidos por situacao ---------- *@
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Pedidos por situação</h2>
+                @foreach (var item in Model.PedidosPorSituacao)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small">
+                            <a asp-controller="Pedidos" asp-action="Index" asp-route-situacao="@item.Nome" class="text-decoration-none">
+                                <span class="badge bg-@RegrasLoja.CorSituacao(item.Nome)">@item.Nome</span>
+                            </a>
+                            <span>@item.Quantidade pedido(s) &middot; @item.Valor.ToString("C")</span>
+                        </div>
+                        <div class="barra-h mt-1"><span style="width:@((item.Quantidade * 100 / maxSit).ToString("0", inv))%"></span></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ---------- estoque baixo ---------- *@
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">&#9888; Estoque baixo</h2>
+                @if (Model.ProdutosEstoqueBaixo.Count == 0)
+                {
+                    <p class="text-muted">Nenhuma caneca com estoque baixo.</p>
+                }
+                @foreach (var p in Model.ProdutosEstoqueBaixo)
+                {
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <img class="thumb-sm" src="@p.ImagemUrl" alt="" />
+                        <a asp-controller="Produtos" asp-action="Edit" asp-route-id="@p.Id" class="flex-grow-1 text-decoration-none small">@p.Nome</a>
+                        <span class="badge @(p.Estoque == 0 ? "bg-danger" : "bg-warning text-dark")">@(p.Estoque == 0 ? "Esgotada" : p.Estoque + " un.")</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ---------- ultimos pedidos ---------- *@
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Últimos pedidos</h2>
+                @foreach (var p in Model.UltimosPedidos)
+                {
+                    <div class="d-flex justify-content-between align-items-center mb-2 small">
+                        <div>
+                            <a asp-controller="Pedidos" asp-action="Detalhes" asp-route-id="@p.Id" class="fw-semibold text-decoration-none">#@p.Id</a>
+                            @p.ClienteNome
+                            <div class="text-muted">@p.DataPedido.ToString("dd/MM HH:mm") &middot; @p.ValorTotal.ToString("C")</div>
+                        </div>
+                        <span class="badge bg-@RegrasLoja.CorSituacao(p.Situacao)">@p.Situacao</span>
+                    </div>
+                }
+                <a asp-controller="Pedidos" asp-action="Index" class="small">Ver todos os pedidos &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>

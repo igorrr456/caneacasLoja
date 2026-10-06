@@ -1,0 +1,43 @@
+@model AlterarSenhaViewModel
+@{
+    ViewData["Title"] = "Alterar senha";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h3 mb-3">Alterar senha</h1>
+
+                @if (ViewBag.Erro != null)
+                {
+                    <div class="alert alert-danger">@ViewBag.Erro</div>
+                }
+
+                <form asp-action="AlterarSenha" method="post">
+                    <div class="mb-3">
+                        <label asp-for="SenhaAtual" class="form-label"></label>
+                        <input asp-for="SenhaAtual" class="form-control" />
+                        <span asp-validation-for="SenhaAtual" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="NovaSenha" class="form-label"></label>
+                        <input asp-for="NovaSenha" class="form-control" />
+                        <span asp-validation-for="NovaSenha" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="ConfirmarSenha" class="form-label"></label>
+                        <input asp-for="ConfirmarSenha" class="form-control" />
+                        <span asp-validation-for="ConfirmarSenha" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-caramelo">Salvar</button>
+                    <a asp-action="MinhaConta" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

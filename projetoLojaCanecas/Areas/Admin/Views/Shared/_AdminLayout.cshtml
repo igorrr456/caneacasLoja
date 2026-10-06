@@ -1,0 +1,76 @@
+@{
+    var nomeLogado = Context.Session.GetString(SessionKeys.AdminNome);
+    var perfilLogado = Context.Session.GetString(SessionKeys.AdminPerfil);
+    var atual = (string?)ViewContext.RouteData.Values["controller"];
+    string Ativo(string controller) => atual == controller ? "ativo" : "";
+}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Painel | Loja de Canecas</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="admin">
+    <div class="admin-wrap">
+        <aside class="admin-menu">
+            <a class="marca" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">&#9749; Painel da Loja</a>
+
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link @Ativo("Dashboard")" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">&#128200; Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link @Ativo("Pedidos")" asp-area="Admin" asp-controller="Pedidos" asp-action="Index">&#128230; Pedidos</a></li>
+
+                <li class="secao">Catálogo</li>
+                <li class="nav-item"><a class="nav-link @Ativo("Produtos")" asp-area="Admin" asp-controller="Produtos" asp-action="Index">&#9749; Canecas</a></li>
+                <li class="nav-item"><a class="nav-link @Ativo("Categorias")" asp-area="Admin" asp-controller="Categorias" asp-action="Index">&#127991; Categorias</a></li>
+
+                <li class="secao">Pessoas</li>
+                <li class="nav-item"><a class="nav-link @Ativo("Clientes")" asp-area="Admin" asp-controller="Clientes" asp-action="Index">&#128101; Clientes</a></li>
+                @if (perfilLogado == Perfis.Administrador)
+                {
+                    <li class="nav-item"><a class="nav-link @Ativo("Usuarios")" asp-area="Admin" asp-controller="Usuarios" asp-action="Index">&#128273; Usuários do painel</a></li>
+                }
+
+                <li class="secao">Atalhos</li>
+                <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index" target="_blank">&#127970; Ver a loja</a></li>
+            </ul>
+
+            <div class="mt-4 pt-3 border-top border-secondary small">
+                <div class="px-2">
+                    <div class="fw-semibold text-white">@nomeLogado</div>
+                    <span class="badge bg-secondary">@perfilLogado</span>
+                </div>
+                <ul class="nav flex-column mt-2">
+                    <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Login" asp-action="AlterarSenha">Alterar minha senha</a></li>
+                    <li class="nav-item"><a class="nav-link text-warning" asp-area="Admin" asp-controller="Login" asp-action="Sair">Sair</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="admin-main">
+            @if (TempData["Mensagem"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Mensagem"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+            }
+            @if (TempData["Erro"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Erro"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

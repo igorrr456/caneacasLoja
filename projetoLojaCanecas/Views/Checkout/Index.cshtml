@@ -1,0 +1,75 @@
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Finalizar compra";
+    var carrinho = Model.Carrinho;
+}
+
+<h1 class="h3 mb-4">Finalizar compra</h1>
+
+<form asp-action="Index" method="post">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="resumo-card p-3 mb-3">
+                <h2 class="h5">1. Entrega</h2>
+                <label asp-for="EnderecoEntrega" class="form-label"></label>
+                <textarea asp-for="EnderecoEntrega" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="EnderecoEntrega" class="text-danger"></span>
+                <div class="form-text">
+                    Veio preenchido com o endereço do seu cadastro. Você pode alterar só para este pedido,
+                    ou <a asp-controller="Conta" asp-action="MinhaConta">atualizar seu cadastro</a>.
+                </div>
+            </div>
+
+            <div class="resumo-card p-3">
+                <h2 class="h5">2. Pagamento</h2>
+                @for (int i = 0; i < RegrasLoja.FormasPagamento.Length; i++)
+                {
+                    var forma = RegrasLoja.FormasPagamento[i];
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="radio" name="FormaPagamento" id="forma-@i"
+                               value="@forma" checked="@(Model.FormaPagamento == forma)" />
+                        <label class="form-check-label" for="forma-@i">@forma</label>
+                    </div>
+                }
+                <span asp-validation-for="FormaPagamento" class="text-danger"></span>
+                <div class="form-text">Pagamento simulado (projeto acadêmico): o pedido nasce como "Pendente" e a loja confirma o pagamento no painel.</div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="resumo-card p-3">
+                <h2 class="h5 mb-3">Seu pedido</h2>
+
+                @foreach (var linha in carrinho.Linhas)
+                {
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <img src="@linha.Produto.ImagemUrl" class="thumb" style="width:48px;height:48px" alt="" />
+                        <div class="flex-grow-1 small">
+                            <div class="fw-semibold">@linha.Produto.Nome</div>
+                            <div class="text-muted">@linha.Quantidade x @linha.Produto.Preco.ToString("C")</div>
+                        </div>
+                        <div class="fw-semibold small">@linha.Subtotal.ToString("C")</div>
+                    </div>
+                }
+                <hr />
+                <div class="d-flex justify-content-between mb-1"><span>Produtos</span><span>@carrinho.Subtotal.ToString("C")</span></div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Frete</span><span>@(carrinho.Frete == 0 ? "Grátis" : carrinho.Frete.ToString("C"))</span>
+                </div>
+                <hr />
+                <div class="d-flex justify-content-between align-items-baseline mb-3">
+                    <span class="fw-semibold">Total</span><span class="preco">@carrinho.Total.ToString("C")</span>
+                </div>
+
+                <button type="submit" class="btn btn-caramelo btn-lg w-100">Confirmar pedido</button>
+                <a asp-controller="Carrinho" asp-action="Index" class="btn btn-link w-100 mt-1">Voltar ao carrinho</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

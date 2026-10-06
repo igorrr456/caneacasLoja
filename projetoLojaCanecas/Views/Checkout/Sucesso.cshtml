@@ -1,0 +1,58 @@
+@model Pedido
+@{
+    ViewData["Title"] = "Pedido realizado";
+}
+
+<div class="text-center py-4">
+    <div style="font-size:3.5rem">&#127881;</div>
+    <h1 class="h3">Pedido #@Model.Id realizado com sucesso!</h1>
+    <p class="text-muted">Obrigado pela compra, @Model.ClienteNome.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="resumo-card p-3 mb-3">
+            <h2 class="h5">Como pagar (@Model.FormaPagamento)</h2>
+            @switch (Model.FormaPagamento)
+            {
+                case "Pix":
+                    <p class="mb-1">Pague com Pix usando a chave (simulada) abaixo:</p>
+                    <code class="d-block p-2 bg-light border rounded">pix@@lojadecanecas.com.br</code>
+                    break;
+                case "Boleto":
+                    <p class="mb-1">Linha digitável do boleto (simulada):</p>
+                    <code class="d-block p-2 bg-light border rounded">00190.00009 01234.567890 12345.678901 2 99990000@((int)(Model.ValorTotal * 100))</code>
+                    break;
+                default:
+                    <p class="mb-0">O pagamento no cartão de crédito será processado pela loja.</p>
+                    break;
+            }
+            <div class="form-text mt-2">Projeto acadêmico: nenhum pagamento real é feito. A loja confirma o pagamento no painel administrativo.</div>
+        </div>
+
+        <div class="resumo-card p-3 mb-3">
+            <h2 class="h5">Resumo</h2>
+            <table class="table table-sm align-middle mb-2">
+                <tbody>
+                    @foreach (var item in Model.Itens)
+                    {
+                        <tr>
+                            <td>@item.ProdutoNome</td>
+                            <td class="text-center">@item.Quantidade x @item.PrecoUnitario.ToString("C")</td>
+                            <td class="text-end">@item.Subtotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="d-flex justify-content-between"><span>Frete</span><span>@(Model.ValorFrete == 0 ? "Grátis" : Model.ValorFrete.ToString("C"))</span></div>
+            <div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>@Model.ValorTotal.ToString("C")</span></div>
+            <hr />
+            <div class="small text-muted">Entrega em: @Model.EnderecoEntrega</div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-center">
+            <a asp-controller="Pedidos" asp-action="Detalhes" asp-route-id="@Model.Id" class="btn btn-caramelo">Acompanhar pedido</a>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-cafe">Continuar comprando</a>
+        </div>
+    </div>
+</div>

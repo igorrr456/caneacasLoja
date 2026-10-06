@@ -1,0 +1,21 @@
+@model Produto
+@{
+    ViewData["Title"] = "Cadastrar caneca";
+}
+
+<h1 class="h3 mb-3">Cadastrar caneca</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Cadastrar" method="post" enctype="multipart/form-data">
+            <partial name="_Form" model="Model" />
+            <button type="submit" class="btn btn-caramelo">Salvar</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+            <p class="text-muted small mt-3 mb-0">Não encontrou a categoria? Cadastre em <a asp-controller="Categorias" asp-action="Cadastrar">Categorias</a>.</p>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
